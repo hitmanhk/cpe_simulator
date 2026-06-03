@@ -1,6 +1,7 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ public class SaslHandler {
         }
 
         connection.setState(XmppConnection.ConnectionState.AUTHENTICATING);
-        String username = config.getUserPrefix() + connection.getDeviceId();
+        String username = "xmpp";
         authUsername = username;
         authPassword = config.getPassword();
         String initialResponse = selectedMechanism.getInitialResponse(username, config.getPassword());
@@ -65,6 +66,7 @@ public class SaslHandler {
         if (stanza instanceof XmppStanza.AuthSuccess) {
             log.debug("SASL auth succeeded for device {}", connection.getDeviceId());
             connection.setState(XmppConnection.ConnectionState.AUTHENTICATED);
+            resetDecoder();
             connection.sendStanza(new XmppStanza.StreamOpen(null, config.getDomain(), null));
         } else if (stanza instanceof XmppStanza.AuthFailure failure) {
             log.error("SASL auth failed for device {}: {}", connection.getDeviceId(), failure.payload());
@@ -86,5 +88,18 @@ public class SaslHandler {
 
     public SaslMechanism getSelectedMechanism() {
         return selectedMechanism;
+    }
+
+    private void resetDecoder() {
+        Channel ch = connection.getChannel();
+        if (ch != null) {
+            XmppStreamDecoder decoder = ch.pipeline().get(XmppStreamDecoder.class);
+            if (decoder != null) {
+                decoder.reset();
+                log.debug("XMPP stream decoder reset for device {}", connection.getDeviceId());
+            } else {
+                log.warn("XMPP stream decoder not found in pipeline for device {}", connection.getDeviceId());
+            }
+        }
     }
 }

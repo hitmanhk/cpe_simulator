@@ -227,6 +227,92 @@ class XmppStreamDecoderTest {
     }
 
     @Test
+    void testDecoderResetAfterStreamOpen() {
+        String streamOpen = "<stream:stream xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" "
+            + "from=\"server.example.com\" id=\"stream1\" version=\"1.0\">";
+        writeXml(streamOpen);
+        channel.readInbound();
+
+        XmppStreamDecoder decoder = channel.pipeline().get(XmppStreamDecoder.class);
+        assertNotNull(decoder);
+        decoder.reset();
+
+        String streamOpen2 = "<stream:stream xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" "
+            + "from=\"server.example.com\" id=\"stream2\" version=\"1.0\">";
+        writeXml(streamOpen2);
+
+        XmppStanza stanza = channel.readInbound();
+        assertNotNull(stanza);
+        assertInstanceOf(XmppStanza.StreamOpen.class, stanza);
+        XmppStanza.StreamOpen open = (XmppStanza.StreamOpen) stanza;
+        assertEquals("stream2", open.id());
+    }
+
+    @Test
+    void testStreamRestartAfterSaslSuccess() {
+        String streamOpen = "<stream:stream xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" "
+            + "from=\"xmpp.huangke.com\" id=\"6nygz6ytr3\" version=\"1.0\">";
+        writeXml(streamOpen);
+        channel.readInbound();
+
+        String features = "<stream:features>"
+            + "<mechanisms xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\">"
+            + "<mechanism>SCRAM-SHA-1</mechanism>"
+            + "</mechanisms></stream:features>";
+        writeXml(features);
+        channel.readInbound();
+
+        String success = "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\">dj1tV0ppWktGbE03RzY4cXlQaGJqVzY2a3kyUlU9</success>";
+        writeXml(success);
+        channel.readInbound();
+
+        XmppStreamDecoder decoder = channel.pipeline().get(XmppStreamDecoder.class);
+        decoder.reset();
+
+        String streamOpen2 = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            + "<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" xmlns=\"jabber:client\" "
+            + "from=\"xmpp.huangke.com\" id=\"6nygz6ytr3\" xml:lang=\"en\" version=\"1.0\">";
+        writeXml(streamOpen2);
+
+        XmppStanza openStanza = channel.readInbound();
+        assertNotNull(openStanza);
+        assertInstanceOf(XmppStanza.StreamOpen.class, openStanza);
+
+        String features2 = "<stream:features>"
+            + "<bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\"/>"
+            + "<session xmlns=\"urn:ietf:params:xml:ns:xmpp-session\"><optional/></session>"
+            + "</stream:features>";
+        writeXml(features2);
+
+        XmppStanza sfStanza = channel.readInbound();
+        assertNotNull(sfStanza);
+        assertInstanceOf(XmppStanza.StreamFeatures.class, sfStanza);
+        XmppStanza.StreamFeatures sf = (XmppStanza.StreamFeatures) sfStanza;
+        assertTrue(sf.hasBind());
+    }
+
+    @Test
+    void testStreamRestartWithoutResetFails() {
+        String streamOpen = "<stream:stream xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" "
+            + "from=\"xmpp.huangke.com\" id=\"stream1\" version=\"1.0\">";
+        writeXml(streamOpen);
+        channel.readInbound();
+
+        String success = "<success xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>";
+        writeXml(success);
+        channel.readInbound();
+
+        String streamOpen2 = "<stream:stream xmlns=\"jabber:client\" xmlns:stream=\"http://etherx.jabber.org/streams\" "
+            + "from=\"xmpp.huangke.com\" id=\"stream2\" version=\"1.0\">";
+        String features2 = "<stream:features>"
+            + "<bind xmlns=\"urn:ietf:params:xml:ns:xmpp-bind\"/>"
+            + "</stream:features>";
+        writeXml(streamOpen2 + features2);
+
+        assertNull(channel.readInbound());
+    }
+
+    @Test
     void testDecodeChallengeEmptyPayload() {
         String challenge = "<challenge xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>";
 

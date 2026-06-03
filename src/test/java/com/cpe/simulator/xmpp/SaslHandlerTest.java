@@ -1,6 +1,8 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -9,6 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+import org.mockito.InOrder;
 
 class SaslHandlerTest {
 
@@ -114,7 +117,7 @@ class SaslHandlerTest {
         XmppStanza.AuthResponse authResponse = (XmppStanza.AuthResponse) sent;
         assertEquals("challenge-response", authResponse.payload());
 
-        verify(mockMechanism).getChallengeResponse("server-challenge-data", "cpe001", "secret");
+        verify(mockMechanism).getChallengeResponse("server-challenge-data", "xmpp", "secret");
     }
 
     @Test
@@ -141,5 +144,49 @@ class SaslHandlerTest {
         verify(connection, times(1)).setState(XmppConnection.ConnectionState.FAILED);
         verify(connection, times(1)).sendStanza(any(XmppStanza.AuthStanza.class));
         verify(connection, never()).sendStanza(any(XmppStanza.AuthResponse.class));
+    }
+
+    @Test
+    void testAuthSuccessResetsDecoder() {
+        XmppStreamDecoder mockDecoder = mock(XmppStreamDecoder.class);
+        ChannelPipeline mockPipeline = mock(ChannelPipeline.class);
+        Channel mockChannel = mock(Channel.class);
+        when(mockPipeline.get(XmppStreamDecoder.class)).thenReturn(mockDecoder);
+        when(mockChannel.pipeline()).thenReturn(mockPipeline);
+        when(connection.getChannel()).thenReturn(mockChannel);
+
+        XmppStanza.AuthSuccess success = new XmppStanza.AuthSuccess(null);
+        saslHandler.handleAuthResult(success);
+
+        InOrder inOrder = inOrder(connection, mockDecoder);
+        inOrder.verify(connection).setState(XmppConnection.ConnectionState.AUTHENTICATED);
+        inOrder.verify(mockDecoder).reset();
+        inOrder.verify(connection).sendStanza(any(XmppStanza.StreamOpen.class));
+    }
+
+    @Test
+    void testAuthSuccessDecoderNotFoundInPipeline() {
+        ChannelPipeline mockPipeline = mock(ChannelPipeline.class);
+        Channel mockChannel = mock(Channel.class);
+        when(mockPipeline.get(XmppStreamDecoder.class)).thenReturn(null);
+        when(mockChannel.pipeline()).thenReturn(mockPipeline);
+        when(connection.getChannel()).thenReturn(mockChannel);
+
+        XmppStanza.AuthSuccess success = new XmppStanza.AuthSuccess(null);
+        saslHandler.handleAuthResult(success);
+
+        verify(connection).setState(XmppConnection.ConnectionState.AUTHENTICATED);
+        verify(connection).sendStanza(any(XmppStanza.StreamOpen.class));
+    }
+
+    @Test
+    void testAuthSuccessNoChannel() {
+        when(connection.getChannel()).thenReturn(null);
+
+        XmppStanza.AuthSuccess success = new XmppStanza.AuthSuccess(null);
+        saslHandler.handleAuthResult(success);
+
+        verify(connection).setState(XmppConnection.ConnectionState.AUTHENTICATED);
+        verify(connection).sendStanza(any(XmppStanza.StreamOpen.class));
     }
 }

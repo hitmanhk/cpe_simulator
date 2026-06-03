@@ -1,5 +1,6 @@
 package com.cpe.simulator.xmpp;
 
+import com.cpe.simulator.common.XmlUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -60,15 +61,13 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
     }
 
     private void handleIqStanza(XmppStanza.IqStanza iq) {
-        if ("result".equals(iq.type()) && iq.childNamespace() == null) {
-            String rawXml = iq.rawXml();
-            if (rawXml != null && rawXml.contains("bind")) {
+        if ("result".equals(iq.type()) || "error".equals(iq.type())) {
+            String ns = iq.childNamespace();
+            if (XmlUtil.NS_XMPP_BIND.equals(ns)) {
                 bindHandler.handleBindResult(iq);
                 return;
             }
-        }
-        if ("result".equals(iq.type()) || "error".equals(iq.type())) {
-            if (iq.childNamespace() == null) {
+            if (ns == null && iq.rawXml() != null && iq.rawXml().contains("bind")) {
                 bindHandler.handleBindResult(iq);
                 return;
             }
