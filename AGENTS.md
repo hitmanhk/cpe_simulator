@@ -29,3 +29,5 @@
 - SOAP 消息使用 StringBuilder 手动拼接 XML，非 JAXB 生成
 - 并发模型依赖 Java 21 虚拟线程 + Semaphore 限流，修改并发逻辑时注意 `max-sessions` 配置
 - 集成测试（`PublicModeIntegrationTest`、`NatModeIntegrationTest`）会启动真实网络端口，CI 环境需注意端口冲突
+
+## 使用中文输出所有结果
