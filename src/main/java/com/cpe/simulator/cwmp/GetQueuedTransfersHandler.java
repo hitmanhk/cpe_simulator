@@ -1,5 +1,6 @@
 package com.cpe.simulator.cwmp;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GetQueuedTransfersHandler implements RpcHandler {
@@ -16,7 +17,12 @@ public class GetQueuedTransfersHandler implements RpcHandler {
         response.setMethodName("GetQueuedTransfersResponse");
 
         List<CwmpSession.PendingTransfer> transfers = device.getPendingTransfers();
-        response.getParameters().put("TransferCount", String.valueOf(transfers.size()));
+        List<SoapBuilder.QueuedTransfer> queuedTransfers = new ArrayList<>();
+        for (CwmpSession.PendingTransfer t : transfers) {
+            int state = t.faultCode() == 0 ? 1 : 4;
+            queuedTransfers.add(new SoapBuilder.QueuedTransfer(t.commandKey(), t.fileType(), state, 0));
+        }
+        response.setTransferList(queuedTransfers);
 
         return response;
     }

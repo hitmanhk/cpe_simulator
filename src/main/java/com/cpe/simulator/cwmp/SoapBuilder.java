@@ -270,6 +270,56 @@ public class SoapBuilder {
         return envelopeEnd(sb);
     }
 
+    public String buildResponse(SoapEnvelope envelope) {
+        String cwmpId = envelope.getCwmpId();
+        if (envelope.isFault()) {
+            return buildFault(envelope.getFaultCode(), envelope.getFaultString(), cwmpId);
+        }
+        return switch (envelope.getMethodName()) {
+            case "GetParameterValuesResponse" ->
+                buildGetParameterValuesResponse(envelope.getParameterList(), cwmpId);
+            case "SetParameterValuesResponse" ->
+                buildSetParameterValuesResponse(Integer.parseInt(envelope.getParameters().getOrDefault("Status", "0")), cwmpId);
+            case "GetParameterNamesResponse" ->
+                buildGetParameterNamesResponse(envelope.getStringList(), cwmpId);
+            case "GetParameterAttributesResponse" ->
+                buildGetParameterAttributesResponse(envelope.getAttributeList(), cwmpId);
+            case "SetParameterAttributesResponse" ->
+                buildSetParameterAttributesResponse(Integer.parseInt(envelope.getParameters().getOrDefault("Status", "0")), cwmpId);
+            case "AddObjectResponse" ->
+                buildAddObjectResponse(
+                    Integer.parseInt(envelope.getParameters().getOrDefault("InstanceNumber", "0")),
+                    Integer.parseInt(envelope.getParameters().getOrDefault("Status", "0")),
+                    cwmpId);
+            case "DeleteObjectResponse" ->
+                buildDeleteObjectResponse(Integer.parseInt(envelope.getParameters().getOrDefault("Status", "0")), cwmpId);
+            case "DownloadResponse" ->
+                buildDownloadResponse(
+                    Integer.parseInt(envelope.getParameters().getOrDefault("Status", "0")),
+                    envelope.getParameters().getOrDefault("StartTime", ""),
+                    envelope.getParameters().getOrDefault("CompleteTime", ""),
+                    cwmpId);
+            case "RebootResponse" -> buildRebootResponse(cwmpId);
+            case "FactoryResetResponse" -> buildFactoryResetResponse(cwmpId);
+            case "ScheduleInformResponse" -> buildScheduleInformResponse(cwmpId);
+            case "GetQueuedTransfersResponse" ->
+                buildGetQueuedTransfersResponse(envelope.getTransferList(), cwmpId);
+            case "GetAllQueuedTransfersResponse" ->
+                buildGetAllQueuedTransfersResponse(envelope.getTransferList(), cwmpId);
+            case "GetRPCMethodsResponse" ->
+                buildGetRPCMethodsResponse(envelope.getStringList(), cwmpId);
+            case "GetOptionsResponse" -> buildGetOptionsResponse(cwmpId);
+            case "SetVouchersResponse" -> buildSetVouchersResponse(cwmpId);
+            case "UploadResponse" ->
+                buildUploadResponse(
+                    Integer.parseInt(envelope.getParameters().getOrDefault("Status", "0")),
+                    envelope.getParameters().getOrDefault("StartTime", ""),
+                    envelope.getParameters().getOrDefault("CompleteTime", ""),
+                    cwmpId);
+            default -> buildEmptyRequest(cwmpId);
+        };
+    }
+
     public String buildFault(int faultCode, String faultString, String cwmpId) {
         StringBuilder sb = envelopeStart(cwmpId);
         sb.append("<soap-env:Fault>\n");

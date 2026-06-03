@@ -18,6 +18,9 @@ public class SoapEnvelope {
     private int faultCode;
     private String faultString;
     private String rawBody;
+    private List<String> stringList;
+    private List<SoapBuilder.ParameterAttribute> attributeList;
+    private List<SoapBuilder.QueuedTransfer> transferList;
 
     public SoapEnvelope() {
         this.parameters = new HashMap<>();
@@ -111,6 +114,30 @@ public class SoapEnvelope {
 
     public void setRawBody(String rawBody) {
         this.rawBody = rawBody;
+    }
+
+    public List<String> getStringList() {
+        return stringList;
+    }
+
+    public void setStringList(List<String> stringList) {
+        this.stringList = stringList;
+    }
+
+    public List<SoapBuilder.ParameterAttribute> getAttributeList() {
+        return attributeList;
+    }
+
+    public void setAttributeList(List<SoapBuilder.ParameterAttribute> attributeList) {
+        this.attributeList = attributeList;
+    }
+
+    public List<SoapBuilder.QueuedTransfer> getTransferList() {
+        return transferList;
+    }
+
+    public void setTransferList(List<SoapBuilder.QueuedTransfer> transferList) {
+        this.transferList = transferList;
     }
 
     public record ParameterInfo(String name, String value, String type) {}

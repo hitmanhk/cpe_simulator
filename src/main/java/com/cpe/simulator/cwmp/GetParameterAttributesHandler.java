@@ -43,7 +43,7 @@ public class GetParameterAttributesHandler implements RpcHandler {
                     node.getFullPath(), node.getNotification(), accessList));
             }
 
-            response.getParameters().put("AttributeCount", String.valueOf(attrs.size()));
+            response.setAttributeList(attrs);
         } catch (Exception e) {
             response.setFault(true);
             response.setFaultCode(9003);

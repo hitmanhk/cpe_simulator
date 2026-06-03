@@ -188,10 +188,9 @@ class RpcHandlerTest {
         SoapEnvelope response = handler.handle(device, request);
 
         assertFalse(response.isFault());
-        String names = response.getParameters().get("ParameterNames");
-        assertNotNull(names);
-        assertTrue(names.contains("Device.DeviceInfo.Manufacturer"));
-        assertTrue(names.contains("Device.DeviceInfo.SoftwareVersion"));
+        assertNotNull(response.getStringList());
+        assertTrue(response.getStringList().contains("Device.DeviceInfo.Manufacturer"));
+        assertTrue(response.getStringList().contains("Device.DeviceInfo.SoftwareVersion"));
     }
 
     @Test
@@ -238,13 +237,12 @@ class RpcHandlerTest {
         SoapEnvelope response = handler.handle(device, request);
 
         assertFalse(response.isFault());
-        String methods = response.getParameters().get("MethodList");
-        assertNotNull(methods);
-        assertTrue(methods.contains("GetParameterValues"));
-        assertTrue(methods.contains("SetParameterValues"));
-        assertTrue(methods.contains("Reboot"));
-        assertTrue(methods.contains("FactoryReset"));
-        assertTrue(methods.contains("Download"));
+        assertNotNull(response.getStringList());
+        assertTrue(response.getStringList().contains("GetParameterValues"));
+        assertTrue(response.getStringList().contains("SetParameterValues"));
+        assertTrue(response.getStringList().contains("Reboot"));
+        assertTrue(response.getStringList().contains("FactoryReset"));
+        assertTrue(response.getStringList().contains("Download"));
     }
 
     private String buildGetParameterValuesXml(String... params) {

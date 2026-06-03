@@ -33,7 +33,7 @@ public class GetParameterNamesHandler implements RpcHandler {
                 return response;
             }
 
-            response.getParameters().put("ParameterNames", String.join(",", paramNames));
+            response.setStringList(paramNames);
         } catch (Exception e) {
             response.setFault(true);
             response.setFaultCode(9003);

@@ -22,7 +22,7 @@ public class GetRPCMethodsHandler implements RpcHandler {
         response.setMethodName("GetRPCMethodsResponse");
 
         List<String> methods = registry.getRegisteredMethods();
-        response.getParameters().put("MethodList", String.join(",", methods));
+        response.setStringList(methods);
 
         return response;
     }
