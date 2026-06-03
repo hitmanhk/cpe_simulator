@@ -30,15 +30,8 @@ public class ConnectionRequestIntegration {
         int port = config.getConnReqPort();
         String url = String.format("http://%s:%d/connReq/%s", host, port, deviceId);
 
-        String paramPath;
-        if ("tr098".equalsIgnoreCase(config.getModel())) {
-            paramPath = "InternetGatewayDevice.ManagementServer.ConnectionRequestURL";
-        } else {
-            paramPath = "Device.ManagementServer.ConnectionRequestURL";
-        }
-
         try {
-            device.getDataModel().setValue(paramPath, url);
+            device.getDataModel().setRelativeValue("ManagementServer.ConnectionRequestURL", url);
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Failed to set ConnectionRequestURL for device " + deviceId, e);
         }

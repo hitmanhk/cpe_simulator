@@ -44,7 +44,7 @@ public class DownloadHandler implements RpcHandler {
 
                     if (faultCode == 0 && "1 Firmware Upgrade Image".equals(fileType)) {
                         DataModel dm = device.getDataModel();
-                        ParameterValue swVersion = dm.getValue("Device.DeviceInfo.SoftwareVersion");
+                        ParameterValue swVersion = dm.getRelativeValue("DeviceInfo.SoftwareVersion");
                         if (swVersion != null) {
                             swVersion.setValue("UPGRADED-" + System.currentTimeMillis());
                         }

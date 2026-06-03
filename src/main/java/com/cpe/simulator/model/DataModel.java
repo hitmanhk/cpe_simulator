@@ -151,6 +151,30 @@ public class DataModel {
         parent.removeChild(instanceName);
     }
 
+    public String getRootName() {
+        Map<String, ParameterNode> children = root.getChildren();
+        if (children.size() == 1) {
+            return children.values().iterator().next().getName();
+        }
+        return "";
+    }
+
+    public String resolvePath(String relativePath) {
+        String rootName = getRootName();
+        if (rootName.isEmpty()) {
+            return relativePath;
+        }
+        return rootName + "." + relativePath;
+    }
+
+    public ParameterValue getRelativeValue(String relativePath) {
+        return getValue(resolvePath(relativePath));
+    }
+
+    public void setRelativeValue(String relativePath, String value) {
+        setValue(resolvePath(relativePath), value);
+    }
+
     public DataModel deepCopy() {
         DataModel copy = new DataModel();
         copy.root = this.root.deepCopy();

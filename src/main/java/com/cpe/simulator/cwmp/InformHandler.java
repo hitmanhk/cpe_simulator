@@ -11,15 +11,15 @@ import java.util.List;
 public class InformHandler {
 
     private static final String[] INFORM_PARAMS = {
-        "Device.DeviceInfo.Manufacturer",
-        "Device.DeviceInfo.ProductClass",
-        "Device.DeviceInfo.SerialNumber",
-        "Device.DeviceInfo.HardwareVersion",
-        "Device.DeviceInfo.SoftwareVersion",
-        "Device.DeviceInfo.ProvisioningCode",
-        "Device.DeviceInfo.UpTime",
-        "Device.ManagementServer.ConnectionRequestURL",
-        "Device.ManagementServer.ParameterKey"
+        "DeviceInfo.Manufacturer",
+        "DeviceInfo.ProductClass",
+        "DeviceInfo.SerialNumber",
+        "DeviceInfo.HardwareVersion",
+        "DeviceInfo.SoftwareVersion",
+        "DeviceInfo.ProvisioningCode",
+        "DeviceInfo.UpTime",
+        "ManagementServer.ConnectionRequestURL",
+        "ManagementServer.ParameterKey"
     };
 
     private final SoapBuilder soapBuilder = new SoapBuilder();
@@ -28,7 +28,7 @@ public class InformHandler {
         DataModel dm = device.getDataModel();
 
         SoapEnvelope.DeviceIdStruct deviceId = new SoapEnvelope.DeviceIdStruct(
-            getParamValue(dm, "Device.DeviceInfo.Manufacturer"),
+            dm.getRelativeValue("DeviceInfo.Manufacturer") != null ? dm.getRelativeValue("DeviceInfo.Manufacturer").getValue() : "",
             device.getOui(),
             device.getProductClass(),
             device.getSerialNumber()
@@ -38,12 +38,13 @@ public class InformHandler {
         events.add(new SoapEnvelope.EventStruct(eventCode, commandKey != null ? commandKey : ""));
 
         List<SoapEnvelope.ParameterInfo> params = new ArrayList<>();
-        for (String paramPath : INFORM_PARAMS) {
-            ParameterValue val = dm.getValue(paramPath);
+        for (String relPath : INFORM_PARAMS) {
+            String absPath = dm.resolvePath(relPath);
+            ParameterValue val = dm.getValue(absPath);
             if (val != null) {
-                params.add(new SoapEnvelope.ParameterInfo(paramPath, val.getValue(), val.getType()));
+                params.add(new SoapEnvelope.ParameterInfo(absPath, val.getValue(), val.getType()));
             } else {
-                params.add(new SoapEnvelope.ParameterInfo(paramPath, "", "xsd:string"));
+                params.add(new SoapEnvelope.ParameterInfo(absPath, "", "xsd:string"));
             }
         }
 

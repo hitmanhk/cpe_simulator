@@ -88,7 +88,7 @@ public class SimulationEngine {
                 String connReqUrl = String.format("http://%s:%d/connReq/%s",
                     config.getConnReqHost(), config.getConnReqPort(), device.getDeviceId());
                 try {
-                    device.getDataModel().setValue("Device.ManagementServer.ConnectionRequestURL", connReqUrl);
+                    device.getDataModel().setRelativeValue("ManagementServer.ConnectionRequestURL", connReqUrl);
                 } catch (IllegalArgumentException ignored) {
                 }
             }

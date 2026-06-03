@@ -209,4 +209,110 @@ class DataModelTest {
             List.of("Device.DeviceInfo.Manufacturer", "Device.ManagementServer.URL"));
         assertEquals(2, nodes.size());
     }
+
+    @Test
+    void testGetRootNameReturnsDeviceForTr181() {
+        assertEquals("Device", model.getRootName());
+    }
+
+    @Test
+    void testGetRootNameReturnsIgdForTr098() {
+        DataModel tr098Model = new DataModel();
+        ParameterNode igd = new ParameterNode("InternetGatewayDevice", "InternetGatewayDevice");
+        tr098Model.getRoot().addChild(igd);
+        ParameterNode di = new ParameterNode("DeviceInfo", "InternetGatewayDevice.DeviceInfo");
+        igd.addChild(di);
+        ParameterNode mfg = new ParameterNode("Manufacturer", "InternetGatewayDevice.DeviceInfo.Manufacturer");
+        mfg.setValue(new ParameterValue("IGDMfg", "xsd:string"));
+        di.addChild(mfg);
+        assertEquals("InternetGatewayDevice", tr098Model.getRootName());
+    }
+
+    @Test
+    void testGetRootNameReturnsEmptyForNoChildren() {
+        DataModel empty = new DataModel();
+        assertEquals("", empty.getRootName());
+    }
+
+    @Test
+    void testGetRootNameReturnsEmptyForMultiRoot() {
+        DataModel multi = new DataModel();
+        ParameterNode a = new ParameterNode("Device", "Device");
+        ParameterNode b = new ParameterNode("InternetGatewayDevice", "InternetGatewayDevice");
+        multi.getRoot().addChild(a);
+        multi.getRoot().addChild(b);
+        assertEquals("", multi.getRootName());
+    }
+
+    @Test
+    void testResolvePathTr181() {
+        assertEquals("Device.DeviceInfo.Manufacturer", model.resolvePath("DeviceInfo.Manufacturer"));
+    }
+
+    @Test
+    void testResolvePathTr098() {
+        DataModel tr098 = new DataModel();
+        ParameterNode igd = new ParameterNode("InternetGatewayDevice", "InternetGatewayDevice");
+        tr098.getRoot().addChild(igd);
+        assertEquals("InternetGatewayDevice.DeviceInfo.Manufacturer", tr098.resolvePath("DeviceInfo.Manufacturer"));
+    }
+
+    @Test
+    void testResolvePathEmptyRootName() {
+        DataModel empty = new DataModel();
+        assertEquals("DeviceInfo.Manufacturer", empty.resolvePath("DeviceInfo.Manufacturer"));
+    }
+
+    @Test
+    void testGetRelativeValueTr181() {
+        ParameterValue val = model.getRelativeValue("DeviceInfo.Manufacturer");
+        assertNotNull(val);
+        assertEquals("SimVendor", val.getValue());
+    }
+
+    @Test
+    void testGetRelativeValueTr098() {
+        DataModel tr098 = new DataModel();
+        ParameterNode igd = new ParameterNode("InternetGatewayDevice", "InternetGatewayDevice");
+        tr098.getRoot().addChild(igd);
+        ParameterNode di = new ParameterNode("DeviceInfo", "InternetGatewayDevice.DeviceInfo");
+        igd.addChild(di);
+        ParameterNode mfg = new ParameterNode("Manufacturer", "InternetGatewayDevice.DeviceInfo.Manufacturer");
+        mfg.setValue(new ParameterValue("IGDMfg", "xsd:string"));
+        di.addChild(mfg);
+        ParameterValue val = tr098.getRelativeValue("DeviceInfo.Manufacturer");
+        assertNotNull(val);
+        assertEquals("IGDMfg", val.getValue());
+    }
+
+    @Test
+    void testGetRelativeValueNonExistent() {
+        assertNull(model.getRelativeValue("DeviceInfo.NonExistent"));
+    }
+
+    @Test
+    void testSetRelativeValueTr181() {
+        model.setRelativeValue("DeviceInfo.SoftwareVersion", "3.0.0");
+        assertEquals("3.0.0", model.getValue("Device.DeviceInfo.SoftwareVersion").getValue());
+    }
+
+    @Test
+    void testSetRelativeValueTr098() {
+        DataModel tr098 = new DataModel();
+        ParameterNode igd = new ParameterNode("InternetGatewayDevice", "InternetGatewayDevice");
+        tr098.getRoot().addChild(igd);
+        ParameterNode ms = new ParameterNode("ManagementServer", "InternetGatewayDevice.ManagementServer");
+        igd.addChild(ms);
+        ParameterNode url = new ParameterNode("ConnectionRequestURL", "InternetGatewayDevice.ManagementServer.ConnectionRequestURL");
+        url.setValue(new ParameterValue("", "xsd:string"));
+        ms.addChild(url);
+        tr098.setRelativeValue("ManagementServer.ConnectionRequestURL", "http://example.com/connReq");
+        assertEquals("http://example.com/connReq", tr098.getValue("InternetGatewayDevice.ManagementServer.ConnectionRequestURL").getValue());
+    }
+
+    @Test
+    void testSetRelativeValueNonExistent() {
+        assertThrows(IllegalArgumentException.class, () ->
+            model.setRelativeValue("ManagementServer.NonExistent", "value"));
+    }
 }
