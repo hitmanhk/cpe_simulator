@@ -87,4 +87,59 @@ class SaslHandlerTest {
         verify(connection).setState(XmppConnection.ConnectionState.FAILED);
         verify(connection, never()).sendStanza(any());
     }
+
+    @Test
+    void testHandleChallengeScramSha1NormalPath() {
+        SaslMechanism mockMechanism = mock(SaslMechanism.class);
+        when(mockMechanism.getMechanismName()).thenReturn("MOCK-SCRAM");
+        when(mockMechanism.getInitialResponse(anyString(), anyString())).thenReturn("initial-response");
+        when(mockMechanism.getChallengeResponse(anyString(), anyString(), anyString())).thenReturn("challenge-response");
+
+        config.setSaslMechanism("MOCK-SCRAM");
+        List<SaslMechanism> mechanisms = List.of(mockMechanism);
+        saslHandler = new SaslHandler(connection, config, mechanisms);
+
+        XmppStanza.StreamFeatures features = new XmppStanza.StreamFeatures(
+            "<stream:features/>", List.of("MOCK-SCRAM"), false, false, false);
+        saslHandler.startAuth(features);
+
+        XmppStanza.AuthChallenge challenge = new XmppStanza.AuthChallenge("server-challenge-data");
+        saslHandler.handleChallenge(challenge);
+
+        ArgumentCaptor<XmppStanza> captor = ArgumentCaptor.forClass(XmppStanza.class);
+        verify(connection, times(2)).sendStanza(captor.capture());
+
+        XmppStanza sent = captor.getAllValues().get(1);
+        assertInstanceOf(XmppStanza.AuthResponse.class, sent);
+        XmppStanza.AuthResponse authResponse = (XmppStanza.AuthResponse) sent;
+        assertEquals("challenge-response", authResponse.payload());
+
+        verify(mockMechanism).getChallengeResponse("server-challenge-data", "cpe001", "secret");
+    }
+
+    @Test
+    void testHandleChallengeFailurePath() {
+        SaslMechanism failingMechanism = new SaslMechanism() {
+            @Override
+            public String getMechanismName() { return "FAIL-MECH"; }
+            @Override
+            public String getInitialResponse(String username, String password) { return ""; }
+            @Override
+            public String getChallengeResponse(String challenge, String username, String password) { return null; }
+        };
+
+        List<SaslMechanism> mechanisms = List.of(failingMechanism);
+        saslHandler = new SaslHandler(connection, config, mechanisms);
+
+        XmppStanza.StreamFeatures features = new XmppStanza.StreamFeatures(
+            "<stream:features/>", List.of("FAIL-MECH"), false, false, false);
+        saslHandler.startAuth(features);
+
+        XmppStanza.AuthChallenge challenge = new XmppStanza.AuthChallenge("some-challenge-data");
+        saslHandler.handleChallenge(challenge);
+
+        verify(connection, times(1)).setState(XmppConnection.ConnectionState.FAILED);
+        verify(connection, times(1)).sendStanza(any(XmppStanza.AuthStanza.class));
+        verify(connection, never()).sendStanza(any(XmppStanza.AuthResponse.class));
+    }
 }

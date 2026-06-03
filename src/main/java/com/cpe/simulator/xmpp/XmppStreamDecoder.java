@@ -186,6 +186,11 @@ public class XmppStreamDecoder extends ByteToMessageDecoder {
             return new XmppStanza.AuthSuccess(payload);
         }
 
+        if (trimmed.startsWith("<challenge") && trimmed.contains("xmlns=\"" + XmlUtil.NS_XMPP_SASL + "\"")) {
+            String payload = extractTextContent(trimmed);
+            return new XmppStanza.AuthChallenge(payload);
+        }
+
         if (trimmed.startsWith("<failure") && trimmed.contains("xmlns=\"" + XmlUtil.NS_XMPP_SASL + "\"")) {
             String payload = extractTextContent(trimmed);
             return new XmppStanza.AuthFailure(payload);
