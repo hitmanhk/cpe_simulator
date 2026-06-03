@@ -123,6 +123,13 @@ public class CpeDevice implements DeviceContext {
 
             CwmpClient.CwmpResponse response = cwmpClient.sendInform(sessionId, informXml);
 
+            if (response.statusCode() == 401) {
+                SimLogger.device(deviceId, "CWMP authentication failed for device");
+                this.state = DeviceState.ERROR;
+                session.sessionComplete();
+                return;
+            }
+
             if (response.statusCode() != 200) {
                 SimLogger.device(deviceId, "Inform failed with status {}", response.statusCode());
                 session.sessionComplete();
