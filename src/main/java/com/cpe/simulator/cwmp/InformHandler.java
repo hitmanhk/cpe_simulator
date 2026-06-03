@@ -47,10 +47,7 @@ public class InformHandler {
             }
         }
 
-        String cwmpId = device.getSession().getCwmpId();
-        if (cwmpId == null) {
-            cwmpId = IdGenerator.cwmpId();
-        }
+        String cwmpId = IdGenerator.cwmpId();
 
         return soapBuilder.buildInform(deviceId, events, params, cwmpId);
     }

@@ -197,7 +197,7 @@ public class CpeDevice implements DeviceContext {
                 SoapEnvelope responseEnvelope = handler.handle(this, request);
                 responseXml = responseEnvelope.getRawBody();
             } else {
-                String faultXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, session.getCwmpId());
+                String faultXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, request.getCwmpId());
                 responseXml = faultXml;
             }
 
@@ -221,7 +221,7 @@ public class CpeDevice implements DeviceContext {
 
     private void sendEmptyRequest(String sessionId) throws Exception {
         session.sendEmptyRequest();
-        String emptyXml = soapBuilder.buildEmptyRequest(session.getCwmpId());
+        String emptyXml = soapBuilder.buildEmptyRequest(IdGenerator.cwmpId());
         CwmpClient.CwmpResponse response = cwmpClient.sendRequest(sessionId, emptyXml);
 
         if (response.statusCode() == 204) {

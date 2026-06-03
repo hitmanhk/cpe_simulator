@@ -15,7 +15,6 @@ public class CwmpSession {
 
     private State state = State.IDLE;
     private String sessionId;
-    private String cwmpId;
     private Instant startTime;
     private Instant lastActivity;
     private int timeoutSeconds;
@@ -34,7 +33,6 @@ public class CwmpSession {
             throw new IllegalStateException("Cannot start session from state: " + state);
         }
         this.sessionId = IdGenerator.uuid();
-        this.cwmpId = IdGenerator.cwmpId();
         this.startTime = Instant.now();
         this.lastActivity = Instant.now();
         this.pendingEvents = new ArrayList<>(events);
@@ -92,7 +90,6 @@ public class CwmpSession {
     public void reset() {
         this.state = State.IDLE;
         this.sessionId = null;
-        this.cwmpId = null;
         this.startTime = null;
         this.lastActivity = null;
         this.pendingEvents = new ArrayList<>();
@@ -106,10 +103,6 @@ public class CwmpSession {
 
     public String getSessionId() {
         return sessionId;
-    }
-
-    public String getCwmpId() {
-        return cwmpId;
     }
 
     public Instant getStartTime() {
@@ -146,10 +139,6 @@ public class CwmpSession {
 
     public void setLastResponse(SoapEnvelope lastResponse) {
         this.lastResponse = lastResponse;
-    }
-
-    public void setCwmpId(String cwmpId) {
-        this.cwmpId = cwmpId;
     }
 
     public void touch() {
