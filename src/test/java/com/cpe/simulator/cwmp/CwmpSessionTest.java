@@ -79,7 +79,7 @@ class CwmpSessionTest {
     }
 
     @Test
-    void startSessionOnAlreadyInSessionClosesAndRestarts() {
+    void startSessionOnAlreadyInSessionOverwritesState() {
         List<SoapEnvelope.EventStruct> events1 = new ArrayList<>();
         events1.add(new SoapEnvelope.EventStruct("2 PERIODIC", ""));
 

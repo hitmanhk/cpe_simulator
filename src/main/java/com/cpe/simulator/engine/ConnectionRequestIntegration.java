@@ -39,7 +39,7 @@ public class ConnectionRequestIntegration {
 
     public void handleXmppConnectionRequest(String deviceId) {
         DeviceContext device = registry.getDevice(deviceId);
-        if (device != null) {
+        if (device != null && device instanceof CpeDevice cpeDevice && !cpeDevice.isSessionActive()) {
             device.triggerInform("6 CONNECTION REQUEST");
         }
     }

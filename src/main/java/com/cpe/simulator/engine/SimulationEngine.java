@@ -78,6 +78,9 @@ public class SimulationEngine {
                 if (device.getState() == CpeDevice.DeviceState.OFFLINE) {
                     return new CwmpServer.ConnectionRequestResult(false, 503, "Device offline");
                 }
+                if (device.isSessionActive()) {
+                    return new CwmpServer.ConnectionRequestResult(true, 200, "OK");
+                }
                 device.triggerInform("6 CONNECTION REQUEST");
                 return new CwmpServer.ConnectionRequestResult(true, 200, "OK");
             });
@@ -97,7 +100,7 @@ public class SimulationEngine {
         if (config.isNatMode()) {
             xmppEngine = new XmppEngine(config, deviceId -> {
                 CpeDevice device = (CpeDevice) deviceRegistry.getDevice(deviceId);
-                if (device != null) {
+                if (device != null && !device.isSessionActive()) {
                     device.triggerInform("6 CONNECTION REQUEST");
                 }
             });

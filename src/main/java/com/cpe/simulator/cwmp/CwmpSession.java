@@ -29,9 +29,6 @@ public class CwmpSession {
     }
 
     public void startSession(List<SoapEnvelope.EventStruct> events) {
-        if (state == State.IN_SESSION) {
-            close();
-        }
         this.sessionId = IdGenerator.uuid();
         this.startTime = Instant.now();
         this.lastActivity = Instant.now();

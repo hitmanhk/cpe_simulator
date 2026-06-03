@@ -1,8 +1,10 @@
 package com.cpe.simulator.engine;
 
+import com.cpe.simulator.common.AppConfig;
 import com.cpe.simulator.cwmp.CwmpServer;
 import com.cpe.simulator.cwmp.CwmpSession;
 import com.cpe.simulator.cwmp.DeviceContext;
+import com.cpe.simulator.model.DataModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +16,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -77,17 +81,29 @@ class DeviceRegistryTest {
     }
 
     @Test
-    void handleConnectionRequestWithRegisteredDevice() {
-        when(mockDevice1.getSession()).thenReturn(mockSession1);
-        when(mockSession1.getState()).thenReturn(CwmpSession.State.IDLE);
+    void handleConnectionRequestWithRegisteredIdleDevice() {
+        AppConfig config = new AppConfig();
+        config.setCount(1);
+        config.setSessionTimeout(30);
+        config.setMaxSessions(10);
 
-        registry.register("device-001", mockDevice1);
+        DataModel dataModel = new DataModel();
+        dataModel.saveDefaults();
 
+        Semaphore semaphore = new Semaphore(10);
+        CpeDevice realDevice = new CpeDevice(
+            "device-001", "SIM00001", "000000", "SimCPE",
+            dataModel, config, null, mock(ScheduledExecutorService.class), semaphore
+        );
+        realDevice.setState(CpeDevice.DeviceState.ONLINE);
+
+        registry.register("device-001", realDevice);
+
+        assertFalse(realDevice.isSessionActive());
         CwmpServer.ConnectionRequestResult result = registry.handleConnectionRequest("device-001");
 
         assertTrue(result.success());
         assertEquals(200, result.statusCode());
-        verify(mockDevice1).triggerInform("6 CONNECTION REQUEST");
     }
 
     @Test
@@ -99,17 +115,34 @@ class DeviceRegistryTest {
     }
 
     @Test
-    void handleConnectionRequestWithBusyDevice() {
-        when(mockDevice1.getSession()).thenReturn(mockSession1);
-        when(mockSession1.getState()).thenReturn(CwmpSession.State.IN_SESSION);
+    void handleConnectionRequestWithSessionActiveDeviceReturnsOkWithoutTriggering() {
+        AppConfig config = new AppConfig();
+        config.setCount(1);
+        config.setSessionTimeout(30);
+        config.setMaxSessions(10);
 
-        registry.register("device-001", mockDevice1);
+        DataModel dataModel = new DataModel();
+        dataModel.saveDefaults();
+
+        Semaphore semaphore = new Semaphore(10);
+        ScheduledExecutorService mockScheduler = mock(ScheduledExecutorService.class);
+        CpeDevice realDevice = new CpeDevice(
+            "device-001", "SIM00001", "000000", "SimCPE",
+            dataModel, config, null, mockScheduler, semaphore
+        );
+        realDevice.setState(CpeDevice.DeviceState.ONLINE);
+
+        realDevice.triggerInform("6 CONNECTION REQUEST");
+        assertTrue(realDevice.isSessionActive());
+
+        registry.register("device-001", realDevice);
 
         CwmpServer.ConnectionRequestResult result = registry.handleConnectionRequest("device-001");
 
-        assertFalse(result.success());
-        assertEquals(503, result.statusCode());
-        verify(mockDevice1, never()).triggerInform(anyString());
+        assertTrue(result.success());
+        assertEquals(200, result.statusCode());
+        assertEquals("OK", result.message());
+        verify(mockScheduler, times(1)).execute(any());
     }
 
     @Test

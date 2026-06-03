@@ -53,9 +53,8 @@ public class DeviceRegistry implements CwmpServer.ConnectionRequestHandler {
             return new CwmpServer.ConnectionRequestResult(false, 404, "Device not found");
         }
 
-        CwmpSession session = device.getSession();
-        if (session != null && session.getState() != CwmpSession.State.IDLE) {
-            return new CwmpServer.ConnectionRequestResult(false, 503, "Device busy");
+        if (device instanceof CpeDevice cpeDevice && cpeDevice.isSessionActive()) {
+            return new CwmpServer.ConnectionRequestResult(true, 200, "OK");
         }
 
         try {

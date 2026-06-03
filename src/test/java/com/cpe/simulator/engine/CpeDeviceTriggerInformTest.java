@@ -50,6 +50,7 @@ class CpeDeviceTriggerInformTest {
 
         verify(mockScheduler, never()).execute(any());
         assertEquals(CwmpSession.State.IDLE, device.getSession().getState());
+        assertFalse(device.isSessionActive());
     }
 
     @Test
@@ -58,6 +59,7 @@ class CpeDeviceTriggerInformTest {
         device.triggerInform("6 CONNECTION REQUEST");
 
         verify(mockScheduler, times(1)).execute(any());
+        assertTrue(device.isSessionActive());
     }
 
     @Test
@@ -72,6 +74,68 @@ class CpeDeviceTriggerInformTest {
     void triggerInformAcceptsConnectingDevice() {
         device.setState(CpeDevice.DeviceState.CONNECTING);
         device.triggerInform("1 BOOT");
+
+        verify(mockScheduler, times(1)).execute(any());
+    }
+
+    @Test
+    void casSuccessTriggersInform() {
+        device.setState(CpeDevice.DeviceState.ONLINE);
+        assertFalse(device.isSessionActive());
+
+        device.triggerInform("6 CONNECTION REQUEST");
+
+        assertTrue(device.isSessionActive());
+        verify(mockScheduler, times(1)).execute(any());
+    }
+
+    @Test
+    void casFailureSkipsInform() {
+        device.setState(CpeDevice.DeviceState.ONLINE);
+        device.triggerInform("6 CONNECTION REQUEST");
+
+        assertTrue(device.isSessionActive());
+        verify(mockScheduler, times(1)).execute(any());
+
+        device.triggerInform("2 PERIODIC");
+        device.triggerInform("6 CONNECTION REQUEST");
+
+        assertTrue(device.isSessionActive());
+        verify(mockScheduler, times(1)).execute(any());
+    }
+
+    @Test
+    void sessionActiveReleasedAfterRunCompletes() {
+        Semaphore semaphore = new Semaphore(10);
+        device = new CpeDevice(
+            "000000-SimCPE-SIM00001", "SIM00001", "000000", "SimCPE",
+            dataModel, config, null, mockScheduler, semaphore
+        );
+        device.setState(CpeDevice.DeviceState.ONLINE);
+
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(mockScheduler).execute(any());
+
+        assertFalse(device.isSessionActive());
+        device.triggerInform("6 CONNECTION REQUEST");
+        assertFalse(device.isSessionActive());
+    }
+
+    @Test
+    void sessionActiveSetBeforeSchedulerSubmission() {
+        Semaphore semaphore = new Semaphore(0);
+        device = new CpeDevice(
+            "000000-SimCPE-SIM00001", "SIM00001", "000000", "SimCPE",
+            dataModel, config, null, mockScheduler, semaphore
+        );
+        device.setState(CpeDevice.DeviceState.ONLINE);
+
+        assertFalse(device.isSessionActive());
+        device.triggerInform("6 CONNECTION REQUEST");
+        assertTrue(device.isSessionActive());
 
         verify(mockScheduler, times(1)).execute(any());
     }

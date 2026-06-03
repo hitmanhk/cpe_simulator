@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CpeDevice implements DeviceContext {
@@ -32,6 +33,7 @@ public class CpeDevice implements DeviceContext {
     private volatile DeviceState state;
     private volatile Instant lastInformTime;
     private final AtomicLong informCount;
+    private final AtomicBoolean sessionActive;
     private final List<CwmpSession.PendingTransfer> pendingTransfers;
     private final ScheduledExecutorService scheduler;
     private final Semaphore sessionSemaphore;
@@ -55,6 +57,7 @@ public class CpeDevice implements DeviceContext {
         this.rpcRegistry = new RpcRegistry(this);
         this.state = DeviceState.CREATED;
         this.informCount = new AtomicLong(0);
+        this.sessionActive = new AtomicBoolean(false);
         this.pendingTransfers = new ArrayList<>();
         this.informHandler = new InformHandler();
         this.soapBuilder = new SoapBuilder();
@@ -90,11 +93,16 @@ public class CpeDevice implements DeviceContext {
             SimLogger.device(deviceId, "Cannot trigger inform, device state: {}", state);
             return;
         }
+        if (!sessionActive.compareAndSet(false, true)) {
+            return;
+        }
         scheduler.execute(() -> {
             try {
                 runInformSession(eventCode, commandKey);
             } catch (Exception e) {
                 SimLogger.error("Inform session failed for device " + deviceId, e);
+            } finally {
+                sessionActive.set(false);
             }
         });
     }
@@ -351,5 +359,9 @@ public class CpeDevice implements DeviceContext {
 
     public CwmpClient getCwmpClient() {
         return cwmpClient;
+    }
+
+    public boolean isSessionActive() {
+        return sessionActive.get();
     }
 }
