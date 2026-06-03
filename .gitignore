@@ -1,3 +1,5 @@
 .opencode
 target
 .idea
+dependency-reduced-pom.xml
+logs/
