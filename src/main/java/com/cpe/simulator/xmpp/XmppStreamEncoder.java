@@ -32,6 +32,7 @@ public class XmppStreamEncoder extends ChannelOutboundHandlerAdapter {
             case XmppStanza.StreamOpen so -> encodeStreamOpen(so);
             case XmppStanza.StreamClose ignored -> "</stream:stream>";
             case XmppStanza.AuthStanza auth -> encodeAuth(auth);
+            case XmppStanza.AuthResponse resp -> encodeAuthResponse(resp);
             case XmppStanza.IqStanza iq -> encodeIq(iq);
             case XmppStanza.PresenceStanza p -> encodePresence(p);
             case XmppStanza.MessageStanza m -> encodeMessage(m);
@@ -128,6 +129,17 @@ public class XmppStreamEncoder extends ChannelOutboundHandlerAdapter {
             sb.append("<resource>").append(XmlUtil.escapeXml(b.resource())).append("</resource>");
         }
         sb.append("</bind></iq>");
+        return sb.toString();
+    }
+
+    private String encodeAuthResponse(XmppStanza.AuthResponse resp) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("<response xmlns=\"").append(XmlUtil.NS_XMPP_SASL).append("\"");
+        if (resp.payload() != null) {
+            sb.append(">").append(resp.payload()).append("</response>");
+        } else {
+            sb.append("/>");
+        }
         return sb.toString();
     }
 }

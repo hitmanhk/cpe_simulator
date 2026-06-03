@@ -14,6 +14,8 @@ public class SaslHandler {
     private final AppConfig.XmppConfig config;
     private final List<SaslMechanism> mechanisms;
     private SaslMechanism selectedMechanism;
+    private String authUsername;
+    private String authPassword;
 
     public SaslHandler(XmppConnection connection, AppConfig.XmppConfig config, List<SaslMechanism> mechanisms) {
         this.connection = connection;
@@ -52,6 +54,8 @@ public class SaslHandler {
 
         connection.setState(XmppConnection.ConnectionState.AUTHENTICATING);
         String username = config.getUserPrefix() + connection.getDeviceId();
+        authUsername = username;
+        authPassword = config.getPassword();
         String initialResponse = selectedMechanism.getInitialResponse(username, config.getPassword());
         connection.sendStanza(new XmppStanza.AuthStanza(selectedMechanism.getMechanismName(), initialResponse));
         log.debug("SASL {} auth started for device {}", selectedMechanism.getMechanismName(), connection.getDeviceId());
@@ -65,6 +69,18 @@ public class SaslHandler {
         } else if (stanza instanceof XmppStanza.AuthFailure failure) {
             log.error("SASL auth failed for device {}: {}", connection.getDeviceId(), failure.payload());
             connection.setState(XmppConnection.ConnectionState.FAILED);
+        }
+    }
+
+    public void handleChallenge(XmppStanza.AuthChallenge challenge) {
+        log.debug("Received SASL challenge for device {}", connection.getDeviceId());
+        String response = selectedMechanism.getChallengeResponse(challenge.payload(), authUsername, authPassword);
+        if (response == null) {
+            log.error("SASL challenge response calculation failed for device {}", connection.getDeviceId());
+            connection.setState(XmppConnection.ConnectionState.FAILED);
+        } else {
+            log.debug("Sending SASL challenge response for device {}", connection.getDeviceId());
+            connection.sendStanza(new XmppStanza.AuthResponse(response));
         }
     }
 

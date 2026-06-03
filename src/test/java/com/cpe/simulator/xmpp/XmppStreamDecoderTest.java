@@ -209,4 +209,34 @@ class XmppStreamDecoderTest {
         assertNotNull(stanza);
         assertInstanceOf(XmppStanza.AuthFailure.class, stanza);
     }
+
+    @Test
+    void testDecodeChallengeWithPayload() {
+        String challenge = "<challenge xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\">"
+            + "cmVhbG09aW90LmV4YW1wbGUuY29tLG5vbmNlPWZjMDZhNjQ5LGNzPU...</challenge>";
+
+        writeXml(challenge);
+
+        XmppStanza stanza = channel.readInbound();
+        assertNotNull(stanza);
+        assertInstanceOf(XmppStanza.AuthChallenge.class, stanza);
+
+        XmppStanza.AuthChallenge authChallenge = (XmppStanza.AuthChallenge) stanza;
+        assertNotNull(authChallenge.payload());
+        assertTrue(authChallenge.payload().startsWith("cmVhbG"));
+    }
+
+    @Test
+    void testDecodeChallengeEmptyPayload() {
+        String challenge = "<challenge xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\"/>";
+
+        writeXml(challenge);
+
+        XmppStanza stanza = channel.readInbound();
+        assertNotNull(stanza);
+        assertInstanceOf(XmppStanza.AuthChallenge.class, stanza);
+
+        XmppStanza.AuthChallenge authChallenge = (XmppStanza.AuthChallenge) stanza;
+        assertNull(authChallenge.payload());
+    }
 }
