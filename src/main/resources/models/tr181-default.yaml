@@ -1,0 +1,165 @@
+parameters:
+  - path: Device.DeviceInfo.Manufacturer
+    type: xsd:string
+    value: "SimVendor"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.OUI
+    type: xsd:string
+    value: "${device.oui}"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.ProductClass
+    type: xsd:string
+    value: "${device.productClass}"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.SerialNumber
+    type: xsd:string
+    value: "${device.serial}"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.HardwareVersion
+    type: xsd:string
+    value: "1.0"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.SoftwareVersion
+    type: xsd:string
+    value: "1.0.0"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.AdditionalHardwareVersion
+    type: xsd:string
+    value: ""
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.AdditionalSoftwareVersion
+    type: xsd:string
+    value: ""
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.ProvisioningCode
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+  - path: Device.DeviceInfo.UpTime
+    type: xsd:unsignedInt
+    value: "0"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.FirstUseDate
+    type: xsd:dateTime
+    value: "0001-01-01T00:00:00Z"
+    writable: false
+    notification: 0
+  - path: Device.DeviceInfo.DeviceLog
+    type: xsd:string
+    value: ""
+    writable: false
+    notification: 0
+  - path: Device.ManagementServer.URL
+    type: xsd:string
+    value: "${acs.url}"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.Username
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.Password
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.PeriodicInformEnable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.PeriodicInformInterval
+    type: xsd:unsignedInt
+    value: "300"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.ConnectionRequestURL
+    type: xsd:string
+    value: "${conn.req.url}"
+    writable: false
+    notification: 0
+  - path: Device.ManagementServer.ConnectionRequestUsername
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.ConnectionRequestPassword
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: Device.ManagementServer.ParameterKey
+    type: xsd:string
+    value: ""
+    writable: false
+    notification: 0
+  - path: Device.ManagementServer.AliasBasedAddressing
+    type: xsd:boolean
+    value: "false"
+    writable: false
+    notification: 0
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Name
+    type: xsd:string
+    value: "WAN"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.IPAddress
+    type: xsd:string
+    value: "${random.ip}"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.SubnetMask
+    type: xsd:string
+    value: "255.255.255.0"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DefaultGateway
+    type: xsd:string
+    value: "10.0.0.1"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DNSServers
+    type: xsd:string
+    value: "8.8.8.8"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.MACAddress
+    type: xsd:string
+    value: "00:00:00:00:00:00"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionType
+    type: xsd:string
+    value: "IP_Routed"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress
+    type: xsd:string
+    value: "${random.ip}"
+    writable: false
+    notification: 0
+    multiInstance: true

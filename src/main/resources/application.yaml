@@ -1,0 +1,41 @@
+simulator:
+  mode: public
+  count: 100
+  acs-url: http://localhost:7547/
+  acs-user: admin
+  acs-password: admin
+
+  model: tr181
+  oui: "000000"
+  product-class: SimCPE
+  serial-prefix: SIM
+
+  inform-interval: 300
+  inform-jitter: 0.3
+  max-sessions: 1000
+
+  connect-batch: 1000
+  connect-batch-delay: 200
+
+  conn-req-host: 0.0.0.0
+  conn-req-port: 7547
+
+  reboot-delay: 5
+  download-delay: 10
+  download-success-rate: 0.99
+
+xmpp:
+  host: localhost
+  port: 5222
+  domain: iot.example.com
+  user-prefix: cpe
+  password: secret
+  resource: sim
+  tls: false
+  sasl-mechanism: PLAIN
+  keepalive-interval: 60
+  keepalive-timeout: 30
+
+logging:
+  level: INFO
+  device-filter: ""

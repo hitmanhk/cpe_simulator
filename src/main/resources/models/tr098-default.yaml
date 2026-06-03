@@ -1,0 +1,104 @@
+parameters:
+  - path: InternetGatewayDevice.DeviceInfo.Manufacturer
+    type: xsd:string
+    value: "SimVendor"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.OUI
+    type: xsd:string
+    value: "${device.oui}"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.ProductClass
+    type: xsd:string
+    value: "${device.productClass}"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.SerialNumber
+    type: xsd:string
+    value: "${device.serial}"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.HardwareVersion
+    type: xsd:string
+    value: "1.0"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.SoftwareVersion
+    type: xsd:string
+    value: "1.0.0"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.ProvisioningCode
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.DeviceInfo.UpTime
+    type: xsd:unsignedInt
+    value: "0"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.URL
+    type: xsd:string
+    value: "${acs.url}"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.Username
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.Password
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.PeriodicInformEnable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.PeriodicInformInterval
+    type: xsd:unsignedInt
+    value: "300"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.ConnectionRequestURL
+    type: xsd:string
+    value: "${conn.req.url}"
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.ConnectionRequestUsername
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.ConnectionRequestPassword
+    type: xsd:string
+    value: "admin"
+    writable: true
+    notification: 0
+  - path: InternetGatewayDevice.ManagementServer.ParameterKey
+    type: xsd:string
+    value: ""
+    writable: false
+    notification: 0
+  - path: InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Name
+    type: xsd:string
+    value: "WAN"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: InternetGatewayDevice.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress
+    type: xsd:string
+    value: "${random.ip}"
+    writable: false
+    notification: 0
+    multiInstance: true
