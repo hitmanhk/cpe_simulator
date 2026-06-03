@@ -9,7 +9,7 @@ import java.util.List;
 
 public class CwmpSession {
 
-    public enum State { IDLE, INFORM_SENT, CPE_HOLD, ACS_HOLD }
+    public enum State { IDLE, IN_SESSION }
 
     public record PendingTransfer(String commandKey, String fileType, int faultCode, String startTime, String completeTime) {}
 
@@ -29,8 +29,8 @@ public class CwmpSession {
     }
 
     public void startSession(List<SoapEnvelope.EventStruct> events) {
-        if (state != State.IDLE) {
-            throw new IllegalStateException("Cannot start session from state: " + state);
+        if (state == State.IN_SESSION) {
+            close();
         }
         this.sessionId = IdGenerator.uuid();
         this.startTime = Instant.now();
@@ -38,56 +38,10 @@ public class CwmpSession {
         this.pendingEvents = new ArrayList<>(events);
         this.pendingTransfers = new ArrayList<>();
         this.lastResponse = null;
-        this.state = State.INFORM_SENT;
+        this.state = State.IN_SESSION;
     }
 
-    public void informSent() {
-        if (state != State.INFORM_SENT) {
-            throw new IllegalStateException("Cannot transition to CPE_HOLD from state: " + state);
-        }
-        this.lastActivity = Instant.now();
-        this.state = State.CPE_HOLD;
-    }
-
-    public void informResponseReceived(boolean holdRequests) {
-        if (state != State.CPE_HOLD) {
-            throw new IllegalStateException("Cannot process InformResponse from state: " + state);
-        }
-        this.lastActivity = Instant.now();
-        if (holdRequests) {
-            this.state = State.ACS_HOLD;
-        }
-    }
-
-    public void acsRequestProcessed() {
-        if (state != State.ACS_HOLD) {
-            throw new IllegalStateException("Cannot transition from state: " + state);
-        }
-        this.lastActivity = Instant.now();
-        this.state = State.CPE_HOLD;
-    }
-
-    public void sendEmptyRequest() {
-        if (state != State.CPE_HOLD) {
-            throw new IllegalStateException("Cannot send empty request from state: " + state);
-        }
-        this.lastActivity = Instant.now();
-        this.state = State.ACS_HOLD;
-    }
-
-    public void sessionComplete() {
-        this.lastActivity = Instant.now();
-        this.state = State.IDLE;
-    }
-
-    public boolean isTimedOut() {
-        if (state == State.IDLE) {
-            return false;
-        }
-        return Duration.between(lastActivity, Instant.now()).getSeconds() > timeoutSeconds;
-    }
-
-    public void reset() {
+    public void close() {
         this.state = State.IDLE;
         this.sessionId = null;
         this.startTime = null;
@@ -95,6 +49,13 @@ public class CwmpSession {
         this.pendingEvents = new ArrayList<>();
         this.pendingTransfers = new ArrayList<>();
         this.lastResponse = null;
+    }
+
+    public boolean isTimedOut() {
+        if (state == State.IDLE) {
+            return false;
+        }
+        return Duration.between(lastActivity, Instant.now()).getSeconds() > timeoutSeconds;
     }
 
     public State getState() {

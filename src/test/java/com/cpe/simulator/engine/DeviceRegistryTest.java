@@ -101,7 +101,7 @@ class DeviceRegistryTest {
     @Test
     void handleConnectionRequestWithBusyDevice() {
         when(mockDevice1.getSession()).thenReturn(mockSession1);
-        when(mockSession1.getState()).thenReturn(CwmpSession.State.CPE_HOLD);
+        when(mockSession1.getState()).thenReturn(CwmpSession.State.IN_SESSION);
 
         registry.register("device-001", mockDevice1);
 
@@ -115,7 +115,7 @@ class DeviceRegistryTest {
     @Test
     void getOnlineCountCountsActiveSessions() {
         when(mockDevice1.getSession()).thenReturn(mockSession1);
-        when(mockSession1.getState()).thenReturn(CwmpSession.State.CPE_HOLD);
+        when(mockSession1.getState()).thenReturn(CwmpSession.State.IN_SESSION);
 
         when(mockDevice2.getSession()).thenReturn(mockSession2);
         when(mockSession2.getState()).thenReturn(CwmpSession.State.IDLE);

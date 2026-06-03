@@ -108,7 +108,10 @@ public class SimulationEngine {
                 conn.onStateChange(xmppState -> {
                     switch (xmppState) {
                         case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                        case FAILED -> device.setState(CpeDevice.DeviceState.ERROR);
+                        case FAILED -> {
+                            device.setState(CpeDevice.DeviceState.OFFLINE);
+                            SimLogger.error("XMPP connection failed for device {}", device.getDeviceId());
+                        }
                         case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                         default -> {}
                     }

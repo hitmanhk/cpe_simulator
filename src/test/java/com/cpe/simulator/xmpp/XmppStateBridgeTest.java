@@ -47,7 +47,7 @@ class XmppStateBridgeTest {
         xmppConnection.onStateChange(xmppState -> {
             switch (xmppState) {
                 case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                case FAILED -> device.setState(CpeDevice.DeviceState.ERROR);
+                case FAILED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 default -> {}
             }
@@ -60,18 +60,18 @@ class XmppStateBridgeTest {
     }
 
     @Test
-    void testFailedStateSyncsToDeviceError() {
+    void testFailedStateSyncsToDeviceOffline() {
         xmppConnection.onStateChange(xmppState -> {
             switch (xmppState) {
                 case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                case FAILED -> device.setState(CpeDevice.DeviceState.ERROR);
+                case FAILED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 default -> {}
             }
         });
 
         xmppConnection.setState(XmppConnection.ConnectionState.FAILED);
-        assertEquals(CpeDevice.DeviceState.ERROR, device.getState());
+        assertEquals(CpeDevice.DeviceState.OFFLINE, device.getState());
     }
 
     @Test
@@ -79,7 +79,7 @@ class XmppStateBridgeTest {
         xmppConnection.onStateChange(xmppState -> {
             switch (xmppState) {
                 case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                case FAILED -> device.setState(CpeDevice.DeviceState.ERROR);
+                case FAILED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 default -> {}
             }
@@ -97,7 +97,7 @@ class XmppStateBridgeTest {
         xmppConnection.onStateChange(xmppState -> {
             switch (xmppState) {
                 case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                case FAILED -> device.setState(CpeDevice.DeviceState.ERROR);
+                case FAILED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 default -> {}
             }
@@ -120,7 +120,7 @@ class XmppStateBridgeTest {
         xmppConnection.onStateChange(xmppState -> {
             switch (xmppState) {
                 case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                case FAILED -> device.setState(CpeDevice.DeviceState.ERROR);
+                case FAILED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
                 default -> {}
             }

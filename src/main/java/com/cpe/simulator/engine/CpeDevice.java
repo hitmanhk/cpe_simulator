@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class CpeDevice implements DeviceContext {
 
-    public enum DeviceState { CREATED, CONNECTING, ONLINE, OFFLINE, ERROR }
+    public enum DeviceState { CREATED, CONNECTING, ONLINE, OFFLINE }
 
     private final String deviceId;
     private final String serialNumber;
@@ -86,7 +86,7 @@ public class CpeDevice implements DeviceContext {
     }
 
     public void triggerInform(String eventCode, String commandKey) {
-        if (state == DeviceState.OFFLINE || state == DeviceState.ERROR) {
+        if (state == DeviceState.OFFLINE) {
             SimLogger.device(deviceId, "Cannot trigger inform, device state: {}", state);
             return;
         }
@@ -125,44 +125,37 @@ public class CpeDevice implements DeviceContext {
 
             if (response.statusCode() == 401) {
                 SimLogger.device(deviceId, "CWMP authentication failed for device");
-                this.state = DeviceState.ERROR;
-                session.sessionComplete();
+                session.close();
                 return;
             }
 
             if (response.statusCode() != 200) {
                 SimLogger.device(deviceId, "Inform failed with status {}", response.statusCode());
-                session.sessionComplete();
+                session.close();
                 return;
             }
 
-            session.informSent();
-
             boolean holdRequests = soapParser.parseInformResponse(response.body());
-            session.informResponseReceived(holdRequests);
 
             lastInformTime = Instant.now();
             informCount.incrementAndGet();
 
-            if (holdRequests && response.body() != null && !response.body().isEmpty()) {
+            if (holdRequests) {
                 processAcsRequests(sessionId);
-            }
-
-            if (session.getState() == CwmpSession.State.CPE_HOLD) {
+            } else {
                 sendEmptyRequest(sessionId);
             }
 
-            session.sessionComplete();
+            session.close();
             SimLogger.device(deviceId, "Inform session complete");
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             SimLogger.device(deviceId, "Inform session interrupted");
-            session.reset();
+            session.close();
         } catch (Exception e) {
             SimLogger.error("Inform session error for device " + deviceId, e);
-            session.reset();
-            this.state = DeviceState.ERROR;
+            session.close();
         } finally {
             if (acquired) {
                 sessionSemaphore.release();
@@ -172,7 +165,7 @@ public class CpeDevice implements DeviceContext {
     }
 
     private void processAcsRequests(String sessionId) throws Exception {
-        while (session.getState() == CwmpSession.State.ACS_HOLD) {
+        while (session.getState() == CwmpSession.State.IN_SESSION) {
             session.touch();
             CwmpClient.CwmpResponse acsResponse = cwmpClient.sendRequest(sessionId, "");
 
@@ -194,8 +187,14 @@ public class CpeDevice implements DeviceContext {
 
             String responseXml;
             if (handler != null) {
-                SoapEnvelope responseEnvelope = handler.handle(this, request);
-                responseXml = soapBuilder.buildResponse(responseEnvelope);
+                try {
+                    SoapEnvelope responseEnvelope = handler.handle(this, request);
+                    responseXml = soapBuilder.buildResponse(responseEnvelope);
+                } catch (Exception e) {
+                    SimLogger.error("RPC handler error for " + methodName + " on device " + deviceId, e);
+                    String faultCwmpId = request.getCwmpId() != null ? request.getCwmpId() : IdGenerator.cwmpId();
+                    responseXml = soapBuilder.buildFault(9002, "Internal error: " + e.getMessage(), faultCwmpId);
+                }
             } else {
                 String faultCwmpId = request.getCwmpId() != null ? request.getCwmpId() : IdGenerator.cwmpId();
                 String faultXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, faultCwmpId);
@@ -203,7 +202,7 @@ public class CpeDevice implements DeviceContext {
             }
 
             CwmpClient.CwmpResponse nextResponse = cwmpClient.sendRequest(sessionId, responseXml);
-            session.acsRequestProcessed();
+            session.touch();
 
             if (nextResponse.statusCode() == 204) {
                 return;
@@ -221,7 +220,7 @@ public class CpeDevice implements DeviceContext {
     }
 
     private void sendEmptyRequest(String sessionId) throws Exception {
-        session.sendEmptyRequest();
+        session.touch();
         String emptyXml = soapBuilder.buildEmptyRequest(IdGenerator.cwmpId());
         CwmpClient.CwmpResponse response = cwmpClient.sendRequest(sessionId, emptyXml);
 
@@ -232,7 +231,7 @@ public class CpeDevice implements DeviceContext {
         if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
             String methodName = soapParser.extractMethodName(response.body());
             if (methodName != null) {
-                session.acsRequestProcessed();
+                session.touch();
                 processAcsRequests(sessionId);
             }
         }
@@ -242,7 +241,7 @@ public class CpeDevice implements DeviceContext {
         scheduler.schedule(() -> {
             SimLogger.device(deviceId, "Simulating reboot");
             this.state = DeviceState.OFFLINE;
-            session.reset();
+            session.close();
             try {
                 Thread.sleep(config.getRebootDelay() * 1000L);
             } catch (InterruptedException e) {
@@ -259,7 +258,7 @@ public class CpeDevice implements DeviceContext {
         scheduler.schedule(() -> {
             SimLogger.device(deviceId, "Simulating factory reset");
             this.state = DeviceState.OFFLINE;
-            session.reset();
+            session.close();
             dataModel.factoryReset();
             this.state = DeviceState.ONLINE;
             triggerInform("1 BOOT", "");
