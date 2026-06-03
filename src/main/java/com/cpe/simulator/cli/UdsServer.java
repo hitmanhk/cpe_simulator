@@ -24,17 +24,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class UdsServer {
 
-    private static final String SOCKET_PATH = "/tmp/cpe-sim.sock";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final int BUFFER_SIZE = 1024 * 1024;
 
     private final SimulationEngine engine;
+    private final String socketPath;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicBoolean shutdownRequested = new AtomicBoolean(false);
     private ServerSocketChannel serverChannel;
 
     public UdsServer(SimulationEngine engine) {
+        this(engine, UdsClient.getDefaultSocketPath());
+    }
+
+    public UdsServer(SimulationEngine engine, String socketPath) {
         this.engine = engine;
+        this.socketPath = socketPath;
     }
 
     public void start() {
@@ -51,9 +56,9 @@ public class UdsServer {
                 SimLogger.error("Error closing UDS server", e);
             }
         }
-        Path socketPath = Path.of(SOCKET_PATH);
+        Path sp = Path.of(socketPath);
         try {
-            Files.deleteIfExists(socketPath);
+            Files.deleteIfExists(sp);
         } catch (Exception e) {
             SimLogger.error("Error deleting socket file", e);
         }
@@ -64,13 +69,13 @@ public class UdsServer {
     }
 
     private void run() {
-        Path socketPath = Path.of(SOCKET_PATH);
+        Path sp = Path.of(socketPath);
         try {
-            Files.deleteIfExists(socketPath);
-            SocketAddress address = UnixDomainSocketAddress.of(socketPath);
+            Files.deleteIfExists(sp);
+            SocketAddress address = UnixDomainSocketAddress.of(sp);
             serverChannel = ServerSocketChannel.open(StandardProtocolFamily.UNIX);
             serverChannel.bind(address);
-            SimLogger.info("UDS management server started at {}", SOCKET_PATH);
+            SimLogger.info("UDS management server started at {}", socketPath);
 
             while (running.get()) {
                 try {

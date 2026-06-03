@@ -117,6 +117,9 @@ public class StartCommand implements Runnable {
     @Option(names = {"--no-periodic"}, description = "Disable periodic inform reports")
     boolean noPeriodic;
 
+    @Option(names = {"--socket-path"}, description = "UDS socket path (default: platform-specific)")
+    String socketPath;
+
     public String validateNatMode() {
         if (xmppOnly && !"nat".equalsIgnoreCase(mode)) {
             return "--xmpp-only is only available in NAT mode";
@@ -166,7 +169,9 @@ public class StartCommand implements Runnable {
 
         progressBar.update("Starting engine", 2, 4);
 
-        UdsServer udsServer = new UdsServer(engine);
+        UdsServer udsServer = socketPath != null
+                ? new UdsServer(engine, socketPath)
+                : new UdsServer(engine);
         CountDownLatch shutdownLatch = new CountDownLatch(1);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

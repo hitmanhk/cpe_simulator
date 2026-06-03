@@ -14,9 +14,12 @@ public class StatusCommand implements Runnable {
     @Option(names = {"--json"}, description = "JSON output")
     boolean json;
 
+    @Option(names = {"--socket-path"}, description = "UDS socket path")
+    String socketPath;
+
     @Override
     public void run() {
-        JsonNode response = UdsClient.send("status");
+        JsonNode response = UdsClient.send("status", null, socketPath);
         if (response == null) {
             return;
         }

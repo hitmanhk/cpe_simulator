@@ -15,14 +15,28 @@ import java.nio.file.Path;
 
 public class UdsClient {
 
-    private static final String SOCKET_PATH = "/tmp/cpe-sim.sock";
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final int BUFFER_SIZE = 1024 * 1024;
 
-    public static JsonNode send(String action, JsonNode params) {
-        Path socketPath = Path.of(SOCKET_PATH);
+    public static String getDefaultSocketPath() {
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("win")) {
+            String temp = System.getenv("TEMP");
+            if (temp == null || temp.isEmpty()) {
+                temp = System.getProperty("java.io.tmpdir");
+            }
+            return temp + "\\cpe-sim.sock";
+        }
+        return "/tmp/cpe-sim.sock";
+    }
+
+    public static JsonNode send(String action, JsonNode params, String socketPathStr) {
+        if (socketPathStr == null || socketPathStr.isEmpty()) {
+            socketPathStr = getDefaultSocketPath();
+        }
+        Path socketPath = Path.of(socketPathStr);
         if (!Files.exists(socketPath)) {
-            System.err.println("Error: Simulator is not running (socket not found at " + SOCKET_PATH + ")");
+            System.err.println("Error: Simulator is not running (socket not found at " + socketPathStr + ")");
             return null;
         }
 
@@ -74,7 +88,11 @@ public class UdsClient {
         }
     }
 
+    public static JsonNode send(String action, JsonNode params) {
+        return send(action, params, null);
+    }
+
     public static JsonNode send(String action) {
-        return send(action, null);
+        return send(action, null, null);
     }
 }

@@ -17,13 +17,16 @@ public class StopCommand implements Runnable {
     @Option(names = {"--timeout", "-t"}, description = "Timeout in seconds", defaultValue = "30")
     int timeout;
 
+    @Option(names = {"--socket-path"}, description = "UDS socket path")
+    String socketPath;
+
     @Override
     public void run() {
         ObjectNode params = MAPPER.createObjectNode();
         params.put("force", force);
         params.put("timeout", timeout);
 
-        JsonNode response = UdsClient.send("stop", params);
+        JsonNode response = UdsClient.send("stop", params, socketPath);
         if (response != null) {
             System.out.println(response.has("message") ? response.get("message").asText() : "Stop command sent");
         }

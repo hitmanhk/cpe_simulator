@@ -31,12 +31,15 @@ public class EventCommand implements Runnable {
         @Parameters(index = "0", description = "Device ID")
         String deviceId;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
             params.put("deviceId", deviceId);
 
-            JsonNode response = UdsClient.send("event-reboot", params);
+            JsonNode response = UdsClient.send("event-reboot", params, socketPath);
             if (response != null && response.has("message")) {
                 System.out.println(response.get("message").asText());
             }
@@ -49,12 +52,15 @@ public class EventCommand implements Runnable {
         @Parameters(index = "0", description = "Device ID")
         String deviceId;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
             params.put("deviceId", deviceId);
 
-            JsonNode response = UdsClient.send("event-factory-reset", params);
+            JsonNode response = UdsClient.send("event-factory-reset", params, socketPath);
             if (response != null && response.has("message")) {
                 System.out.println(response.get("message").asText());
             }
@@ -73,6 +79,9 @@ public class EventCommand implements Runnable {
         @Option(names = {"--value", "-v"}, description = "New value", required = true)
         String value;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
@@ -80,7 +89,7 @@ public class EventCommand implements Runnable {
             params.put("param", param);
             params.put("value", value);
 
-            JsonNode response = UdsClient.send("event-value-change", params);
+            JsonNode response = UdsClient.send("event-value-change", params, socketPath);
             if (response != null && response.has("message")) {
                 System.out.println(response.get("message").asText());
             }

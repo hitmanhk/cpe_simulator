@@ -36,13 +36,16 @@ public class DeviceCommand implements Runnable {
         @Option(names = {"--limit"}, description = "Maximum number of devices to show", defaultValue = "100")
         int limit;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
             params.put("online", online);
             params.put("limit", limit);
 
-            JsonNode response = UdsClient.send("device-list", params);
+            JsonNode response = UdsClient.send("device-list", params, socketPath);
             if (response == null) return;
 
             JsonNode devices = response.get("devices");
@@ -80,6 +83,9 @@ public class DeviceCommand implements Runnable {
         @Option(names = {"--path", "-p"}, description = "Parameter path to query")
         String path;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
@@ -88,7 +94,7 @@ public class DeviceCommand implements Runnable {
                 params.put("path", path);
             }
 
-            JsonNode response = UdsClient.send("device-get", params);
+            JsonNode response = UdsClient.send("device-get", params, socketPath);
             if (response == null) return;
 
             JsonNode device = response.get("device");
@@ -124,12 +130,15 @@ public class DeviceCommand implements Runnable {
         @Option(names = {"--count", "-c"}, description = "Number of devices to add", defaultValue = "1")
         int count;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
             params.put("count", count);
 
-            JsonNode response = UdsClient.send("device-add", params);
+            JsonNode response = UdsClient.send("device-add", params, socketPath);
             if (response != null && response.has("message")) {
                 System.out.println(response.get("message").asText());
             }
@@ -142,12 +151,15 @@ public class DeviceCommand implements Runnable {
         @Parameters(index = "0", description = "Device ID to remove")
         String deviceId;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
             params.put("deviceId", deviceId);
 
-            JsonNode response = UdsClient.send("device-remove", params);
+            JsonNode response = UdsClient.send("device-remove", params, socketPath);
             if (response != null && response.has("message")) {
                 System.out.println(response.get("message").asText());
             }
@@ -163,6 +175,9 @@ public class DeviceCommand implements Runnable {
         @Option(names = {"--random", "-r"}, description = "Trigger random informs on N devices")
         int random;
 
+        @Option(names = {"--socket-path"}, description = "UDS socket path")
+        String socketPath;
+
         @Override
         public void run() {
             ObjectNode params = MAPPER.createObjectNode();
@@ -175,7 +190,7 @@ public class DeviceCommand implements Runnable {
                 return;
             }
 
-            JsonNode response = UdsClient.send("device-inform", params);
+            JsonNode response = UdsClient.send("device-inform", params, socketPath);
             if (response != null && response.has("message")) {
                 System.out.println(response.get("message").asText());
             }
