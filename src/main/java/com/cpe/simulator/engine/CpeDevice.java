@@ -197,7 +197,8 @@ public class CpeDevice implements DeviceContext {
                 SoapEnvelope responseEnvelope = handler.handle(this, request);
                 responseXml = responseEnvelope.getRawBody();
             } else {
-                String faultXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, request.getCwmpId());
+                String faultCwmpId = request.getCwmpId() != null ? request.getCwmpId() : IdGenerator.cwmpId();
+                String faultXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, faultCwmpId);
                 responseXml = faultXml;
             }
 
