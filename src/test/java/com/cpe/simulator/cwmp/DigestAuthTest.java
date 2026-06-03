@@ -100,4 +100,45 @@ class DigestAuthTest {
         var params2 = DigestAuth.parseWwwAuthenticate("");
         assertTrue(params2.isEmpty());
     }
+
+    @Test
+    void hashHexSha256ProducesCorrectHash() {
+        String result = DigestAuth.hashHex("SHA-256", "test");
+        assertEquals("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", result);
+    }
+
+    @Test
+    void hashHexMd5MatchesLegacyMd5Hex() {
+        String legacy = DigestAuth.md5Hex("hello");
+        String generic = DigestAuth.hashHex("MD5", "hello");
+        assertEquals(legacy, generic);
+    }
+
+    @Test
+    void calculateDigestResponseWithSha256() {
+        String response = DigestAuth.calculateDigestResponse(
+                "SHA-256", "admin", "secret", "testrealm", "abc123",
+                "/acs", "POST", "auth", "00000001", "cnonce123");
+        assertNotNull(response);
+        assertEquals(64, response.length());
+    }
+
+    @Test
+    void buildAuthorizationHeaderWithSha256Algorithm() {
+        String challenge = "Digest realm=\"testrealm\", nonce=\"abc123\", qop=\"auth\", algorithm=SHA-256";
+        String header = DigestAuth.buildAuthorizationHeader(challenge, "admin", "password", "/acs", "POST");
+
+        assertTrue(header.startsWith("Digest "));
+        assertTrue(header.contains("algorithm=SHA-256"));
+        assertTrue(header.contains("username=\"admin\""));
+        assertTrue(header.contains("realm=\"testrealm\""));
+    }
+
+    @Test
+    void buildAuthorizationHeaderDefaultsToMd5() {
+        String challenge = "Digest realm=\"testrealm\", nonce=\"abc123\", qop=\"auth\"";
+        String header = DigestAuth.buildAuthorizationHeader(challenge, "admin", "password", "/acs", "POST");
+
+        assertTrue(header.contains("algorithm=MD5"));
+    }
 }

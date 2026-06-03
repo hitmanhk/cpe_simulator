@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Base64;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
@@ -56,8 +57,15 @@ public class CwmpClient {
 
         if (response.statusCode() == 401) {
             String wwwAuth = response.headers().firstValue("WWW-Authenticate").orElse(null);
-            if (wwwAuth != null && wwwAuth.regionMatches(true, 0, "Digest", 0, 6)) {
-                String authHeader = DigestAuth.buildAuthorizationHeader(wwwAuth, acsUser, acsPassword, acsUrl, "POST");
+            String scheme = detectAuthScheme(wwwAuth);
+
+            if (scheme != null) {
+                String authHeader;
+                if ("Digest".equals(scheme)) {
+                    authHeader = DigestAuth.buildAuthorizationHeader(wwwAuth, acsUser, acsPassword, acsUrl, "POST");
+                } else {
+                    authHeader = buildBasicAuthHeader(acsUser, acsPassword);
+                }
 
                 HttpRequest.Builder retryBuilder = HttpRequest.newBuilder()
                         .uri(URI.create(acsUrl))
@@ -84,6 +92,25 @@ public class CwmpClient {
         });
 
         return new CwmpResponse(response.statusCode(), response.body(), respHeaders);
+    }
+
+    static String buildBasicAuthHeader(String username, String password) {
+        String credentials = username + ":" + password;
+        return "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    static String detectAuthScheme(String wwwAuthenticate) {
+        if (wwwAuthenticate == null || wwwAuthenticate.isEmpty()) {
+            return null;
+        }
+        String trimmed = wwwAuthenticate.trim();
+        if (trimmed.regionMatches(true, 0, "Digest", 0, 6)) {
+            return "Digest";
+        }
+        if (trimmed.regionMatches(true, 0, "Basic", 0, 5)) {
+            return "Basic";
+        }
+        return null;
     }
 
     public void closeSession(String sessionId) {

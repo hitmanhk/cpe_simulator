@@ -9,20 +9,27 @@ import java.util.UUID;
 
 public class DigestAuth {
 
+    public static String calculateDigestResponse(String algorithm, String username, String password,
+                                                  String realm, String nonce,
+                                                  String uri, String method,
+                                                  String qop, String nc, String cnonce) {
+        String ha1 = hashHex(algorithm, username + ":" + realm + ":" + password);
+        String ha2 = hashHex(algorithm, method + ":" + uri);
+
+        String response;
+        if ("auth".equals(qop)) {
+            response = hashHex(algorithm, ha1 + ":" + nonce + ":" + nc + ":" + cnonce + ":" + qop + ":" + ha2);
+        } else {
+            response = hashHex(algorithm, ha1 + ":" + nonce + ":" + ha2);
+        }
+        return response;
+    }
+
     public static String calculateDigestResponse(String username, String password,
                                                   String realm, String nonce,
                                                   String uri, String method,
                                                   String qop, String nc, String cnonce) {
-        String ha1 = md5Hex(username + ":" + realm + ":" + password);
-        String ha2 = md5Hex(method + ":" + uri);
-
-        String response;
-        if ("auth".equals(qop)) {
-            response = md5Hex(ha1 + ":" + nonce + ":" + nc + ":" + cnonce + ":" + qop + ":" + ha2);
-        } else {
-            response = md5Hex(ha1 + ":" + nonce + ":" + ha2);
-        }
-        return response;
+        return calculateDigestResponse("MD5", username, password, realm, nonce, uri, method, qop, nc, cnonce);
     }
 
     public static String buildAuthorizationHeader(String wwwAuthenticate, String username,
@@ -33,11 +40,12 @@ public class DigestAuth {
         String nonce = params.getOrDefault("nonce", "");
         String qop = params.getOrDefault("qop", null);
         String opaque = params.getOrDefault("opaque", null);
+        String algorithm = params.getOrDefault("algorithm", "MD5");
 
         String nc = "00000001";
         String cnonce = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
-        String response = calculateDigestResponse(username, password, realm, nonce, uri, method, qop, nc, cnonce);
+        String response = calculateDigestResponse(algorithm, username, password, realm, nonce, uri, method, qop, nc, cnonce);
 
         StringBuilder sb = new StringBuilder();
         sb.append("Digest username=\"").append(username).append("\"");
@@ -45,6 +53,7 @@ public class DigestAuth {
         sb.append(", nonce=\"").append(nonce).append("\"");
         sb.append(", uri=\"").append(uri).append("\"");
         sb.append(", response=\"").append(response).append("\"");
+        sb.append(", algorithm=").append(algorithm);
         if (qop != null) {
             sb.append(", qop=").append(qop);
             sb.append(", nc=").append(nc);
@@ -97,11 +106,12 @@ public class DigestAuth {
         return params;
     }
 
-    static String md5Hex(String input) {
+    static String hashHex(String algorithm, String input) {
         try {
-            MessageDigest md = MessageDigest.getInstance("MD5");
+            String jcaAlgorithm = "SHA-256".equalsIgnoreCase(algorithm) ? "SHA-256" : "MD5";
+            MessageDigest md = MessageDigest.getInstance(jcaAlgorithm);
             byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            StringBuilder sb = new StringBuilder(32);
+            StringBuilder sb = new StringBuilder(digest.length * 2);
             for (byte b : digest) {
                 sb.append(String.format("%02x", b & 0xff));
             }
@@ -109,5 +119,9 @@ public class DigestAuth {
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static String md5Hex(String input) {
+        return hashHex("MD5", input);
     }
 }
