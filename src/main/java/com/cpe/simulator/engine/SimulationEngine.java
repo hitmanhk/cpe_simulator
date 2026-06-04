@@ -41,6 +41,7 @@ public class SimulationEngine {
     private XmppEngine xmppEngine;
     private InformScheduler informScheduler;
     private BatchConnector batchConnector;
+    private BootLauncher bootLauncher;
     private DeviceRegistry deviceRegistry;
     private Semaphore sessionSemaphore;
     private volatile boolean running;
@@ -134,9 +135,8 @@ public class SimulationEngine {
             batchConnector = new BatchConnector(config);
             batchConnector.connectBatch(devices).join();
 
-            for (CpeDevice device : devices) {
-                device.triggerInform("1 BOOT");
-            }
+            bootLauncher = new BootLauncher(config);
+            bootLauncher.launchBoot(devices).join();
         }
 
         if (!config.isXmppOnly() && !config.isNoPeriodic()) {
@@ -186,6 +186,10 @@ public class SimulationEngine {
             batchConnector.shutdown();
         }
 
+        if (bootLauncher != null) {
+            bootLauncher.shutdown();
+        }
+
         if (scheduler != null) {
             scheduler.shutdown();
         }
@@ -211,6 +215,9 @@ public class SimulationEngine {
         }
         if (batchConnector != null) {
             batchConnector.shutdown();
+        }
+        if (bootLauncher != null) {
+            bootLauncher.shutdown();
         }
         if (scheduler != null) {
             scheduler.shutdownNow();
