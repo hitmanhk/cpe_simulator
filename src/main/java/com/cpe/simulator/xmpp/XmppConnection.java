@@ -13,6 +13,8 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -29,12 +31,19 @@ public class XmppConnection {
     private volatile String jid;
     private final String deviceId;
     private final AppConfig.XmppConfig config;
+    private final InetAddress localInetAddress;
     private final Consumer<String> connectionRequestCallback;
     private volatile Consumer<ConnectionState> onStateChangeCallback;
 
-    public XmppConnection(String deviceId, AppConfig.XmppConfig config, Consumer<String> connectionRequestCallback) {
+    public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback) {
         this.deviceId = deviceId;
         this.config = config;
+        try {
+            this.localInetAddress = (localAddress != null && !localAddress.isEmpty())
+                ? InetAddress.getByName(localAddress) : null;
+        } catch (UnknownHostException e) {
+            throw new IllegalArgumentException("Invalid local-address: " + localAddress, e);
+        }
         this.connectionRequestCallback = connectionRequestCallback;
     }
 
@@ -79,6 +88,10 @@ public class XmppConnection {
                     channel = ch;
                 }
             });
+
+        if (localInetAddress != null) {
+            bootstrap.localAddress(localInetAddress, 0);
+        }
 
         ChannelFuture channelFuture = bootstrap.connect(config.getHost(), config.getPort());
         channelFuture.addListener(f -> {

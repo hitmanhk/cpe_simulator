@@ -27,7 +27,7 @@ class XmppConnectionTest {
     @Test
     void testConstructorWithCallback() {
         AtomicReference<String> callbackResult = new AtomicReference<>();
-        XmppConnection conn = new XmppConnection("device001", config, callbackResult::set);
+        XmppConnection conn = new XmppConnection("device001", config, null, callbackResult::set);
 
         assertEquals("device001", conn.getDeviceId());
         assertEquals(XmppConnection.ConnectionState.DISCONNECTED, conn.getState());
@@ -36,14 +36,14 @@ class XmppConnectionTest {
 
     @Test
     void testConstructorWithNullCallback() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
         assertNotNull(conn);
         assertEquals("device001", conn.getDeviceId());
     }
 
     @Test
     void testStateChangeCallbackRegistration() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
         List<XmppConnection.ConnectionState> stateChanges = new ArrayList<>();
 
         conn.onStateChange(stateChanges::add);
@@ -59,7 +59,7 @@ class XmppConnectionTest {
 
     @Test
     void testStateChangeWithoutCallback() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
 
         assertDoesNotThrow(() -> {
             conn.setState(XmppConnection.ConnectionState.CONNECTING);
@@ -72,7 +72,7 @@ class XmppConnectionTest {
 
     @Test
     void testStateChangeCallbackReceivesAllStates() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
         AtomicReference<XmppConnection.ConnectionState> lastState = new AtomicReference<>();
         conn.onStateChange(lastState::set);
 
@@ -85,7 +85,7 @@ class XmppConnectionTest {
 
     @Test
     void testJidGetterSetter() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
         assertNull(conn.getJid());
 
         conn.setJid("device001@test.example.com/sim");
@@ -94,7 +94,7 @@ class XmppConnectionTest {
 
     @Test
     void testIsOnlineRequiresChannelAndState() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
 
         conn.setState(XmppConnection.ConnectionState.ONLINE);
         assertFalse(conn.isOnline());
@@ -102,7 +102,7 @@ class XmppConnectionTest {
 
     @Test
     void testSendStanzaWithNoChannel() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
 
         assertDoesNotThrow(() ->
             conn.sendStanza(new XmppStanza.PresenceStanza(null, null, null, null))
@@ -111,7 +111,7 @@ class XmppConnectionTest {
 
     @Test
     void testDisconnectWithNoChannel() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
         List<XmppConnection.ConnectionState> stateChanges = new ArrayList<>();
         conn.onStateChange(stateChanges::add);
 
@@ -122,7 +122,7 @@ class XmppConnectionTest {
 
     @Test
     void testGetConfig() {
-        XmppConnection conn = new XmppConnection("device001", config, null);
+        XmppConnection conn = new XmppConnection("device001", config, null, null);
         assertSame(config, conn.getConfig());
     }
 }

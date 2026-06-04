@@ -2,6 +2,7 @@ package com.cpe.simulator.cwmp;
 
 import com.cpe.simulator.common.AppConfig;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -26,11 +27,19 @@ public class CwmpClient {
     private final SoapParser soapParser;
 
     public CwmpClient(AppConfig config) {
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .executor(Executors.newVirtualThreadPerTaskExecutor())
-                .connectTimeout(Duration.ofSeconds(30))
-                .build();
+        try {
+            String localAddress = config.getLocalAddress();
+            HttpClient.Builder builder = HttpClient.newBuilder()
+                    .version(HttpClient.Version.HTTP_1_1)
+                    .executor(Executors.newVirtualThreadPerTaskExecutor())
+                    .connectTimeout(Duration.ofSeconds(30));
+            if (localAddress != null && !localAddress.isEmpty()) {
+                builder.localAddress(InetAddress.getByName(localAddress));
+            }
+            this.httpClient = builder.build();
+        } catch (java.net.UnknownHostException e) {
+            throw new IllegalArgumentException("Invalid local-address: " + config.getLocalAddress(), e);
+        }
         this.acsUrl = config.getAcsUrl();
         this.acsUser = config.getAcsUser();
         this.acsPassword = config.getAcsPassword();

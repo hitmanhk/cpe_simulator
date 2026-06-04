@@ -96,6 +96,9 @@ public class AppConfig {
     @JsonProperty("no-periodic")
     private boolean noPeriodic = false;
 
+    @JsonProperty("local-address")
+    private String localAddress;
+
     private XmppConfig xmpp = new XmppConfig();
     private LoggingConfig logging = new LoggingConfig();
 
@@ -159,6 +162,8 @@ public class AppConfig {
     public void setXmppOnly(boolean xmppOnly) { this.xmppOnly = xmppOnly; }
     public boolean isNoPeriodic() { return noPeriodic; }
     public void setNoPeriodic(boolean noPeriodic) { this.noPeriodic = noPeriodic; }
+    public String getLocalAddress() { return localAddress; }
+    public void setLocalAddress(String localAddress) { this.localAddress = localAddress; }
     public XmppConfig getXmpp() { return xmpp; }
     public void setXmpp(XmppConfig xmpp) { this.xmpp = xmpp; }
     public LoggingConfig getLogging() { return logging; }

@@ -24,6 +24,8 @@ simulator:
   download-delay: 10
   download-success-rate: 0.99
 
+  local-address: ""
+
 xmpp:
   host: localhost
   port: 5222

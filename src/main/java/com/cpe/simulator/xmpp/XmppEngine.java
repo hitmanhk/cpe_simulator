@@ -33,7 +33,7 @@ public class XmppEngine {
     }
 
     public XmppConnection createConnection(String deviceId) {
-        return new XmppConnection(deviceId, appConfig.getXmpp(), connectionRequestCallback);
+        return new XmppConnection(deviceId, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback);
     }
 
     public void start(List<XmppConnection> connections) {
