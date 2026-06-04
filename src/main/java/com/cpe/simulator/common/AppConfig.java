@@ -33,6 +33,9 @@ public class AppConfig {
     @JsonProperty("serial-prefix")
     private String serialPrefix = "SIM";
 
+    @JsonProperty("serial-start")
+    private int serialStart = 0;
+
     @JsonProperty("inform-interval")
     private int informInterval = 300;
 
@@ -120,6 +123,8 @@ public class AppConfig {
     public void setProductClass(String productClass) { this.productClass = productClass; }
     public String getSerialPrefix() { return serialPrefix; }
     public void setSerialPrefix(String serialPrefix) { this.serialPrefix = serialPrefix; }
+    public int getSerialStart() { return serialStart; }
+    public void setSerialStart(int serialStart) { this.serialStart = serialStart; }
     public int getInformInterval() { return informInterval; }
     public void setInformInterval(int informInterval) { this.informInterval = informInterval; }
     public double getInformJitter() { return informJitter; }

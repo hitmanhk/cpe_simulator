@@ -29,7 +29,7 @@ public class DeviceManager {
         this.templateModel = templateModel;
         this.cwmpClient = new CwmpClient(config);
         this.devices = new CopyOnWriteArrayList<>();
-        this.nextIndex = new AtomicInteger(0);
+        this.nextIndex = new AtomicInteger(config.getSerialStart());
         this.sessionSemaphore = new Semaphore(config.getMaxSessions());
         this.scheduler = Executors.newScheduledThreadPool(
             Math.max(2, Runtime.getRuntime().availableProcessors()),

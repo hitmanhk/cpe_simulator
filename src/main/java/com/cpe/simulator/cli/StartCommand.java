@@ -39,6 +39,9 @@ public class StartCommand implements Runnable {
     @Option(names = {"--serial-prefix"}, description = "Serial number prefix", defaultValue = "SIM")
     String serialPrefix;
 
+    @Option(names = {"--serial-start"}, description = "Serial number start index", defaultValue = "0")
+    int serialStart;
+
     @Option(names = {"--inform-interval"}, description = "Inform interval in seconds", defaultValue = "300")
     int informInterval;
 
@@ -243,6 +246,7 @@ public class StartCommand implements Runnable {
         config.setOui(oui);
         config.setProductClass(productClass);
         config.setSerialPrefix(serialPrefix);
+        config.setSerialStart(serialStart);
         config.setInformInterval(informInterval);
         config.setInformJitter(informJitter);
         config.setMaxSessions(maxSessions);

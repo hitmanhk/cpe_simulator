@@ -138,4 +138,36 @@ class DeviceManagerTest {
 
         manager.shutdown();
     }
+
+    @Test
+    void testSerialStartIndex() {
+        config.setSerialStart(100);
+        DeviceManager manager = new DeviceManager(config, templateModel);
+        List<CpeDevice> devices = manager.createDevices(3);
+
+        assertEquals("TST00100", devices.get(0).getSerialNumber());
+        assertEquals("TST00101", devices.get(1).getSerialNumber());
+        assertEquals("TST00102", devices.get(2).getSerialNumber());
+
+        manager.shutdown();
+    }
+
+    @Test
+    void testSerialStartWithAddDevices() {
+        config.setSerialStart(100);
+        config.setCount(5);
+        DeviceManager manager = new DeviceManager(config, templateModel);
+
+        List<CpeDevice> initialDevices = manager.createDevices(5);
+        assertEquals("TST00100", initialDevices.get(0).getSerialNumber());
+        assertEquals("TST00104", initialDevices.get(4).getSerialNumber());
+
+        manager.addDevices(3);
+        assertEquals(8, manager.getDeviceCount());
+
+        CpeDevice added0 = manager.getDevices().get(5);
+        assertEquals("TST00105", added0.getSerialNumber());
+
+        manager.shutdown();
+    }
 }
