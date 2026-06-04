@@ -175,22 +175,34 @@ public class CpeDevice implements DeviceContext {
     private void processAcsRequests(String sessionId) throws Exception {
         while (session.getState() == CwmpSession.State.IN_SESSION) {
             session.touch();
-            CwmpClient.CwmpResponse acsResponse = cwmpClient.sendRequest(sessionId, "");
 
-            if (acsResponse.statusCode() == 204) {
-                return;
+            SoapEnvelope request;
+            String methodName;
+
+            SoapEnvelope pendingRequest = session.getLastResponse();
+            if (pendingRequest != null) {
+                session.setLastResponse(null);
+                request = pendingRequest;
+                methodName = pendingRequest.getMethodName();
+            } else {
+                CwmpClient.CwmpResponse acsResponse = cwmpClient.sendRequest(sessionId, "");
+
+                if (acsResponse.statusCode() == 204) {
+                    return;
+                }
+
+                if (acsResponse.statusCode() != 200 || acsResponse.body() == null || acsResponse.body().isEmpty()) {
+                    break;
+                }
+
+                methodName = soapParser.extractMethodName(acsResponse.body());
+                if (methodName == null) {
+                    break;
+                }
+
+                request = soapParser.parse(acsResponse.body());
             }
 
-            if (acsResponse.statusCode() != 200 || acsResponse.body() == null || acsResponse.body().isEmpty()) {
-                break;
-            }
-
-            String methodName = soapParser.extractMethodName(acsResponse.body());
-            if (methodName == null) {
-                break;
-            }
-
-            SoapEnvelope request = soapParser.parse(acsResponse.body());
             RpcHandler handler = rpcRegistry.getHandler(methodName);
 
             String responseXml;
