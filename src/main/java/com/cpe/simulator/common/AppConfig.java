@@ -81,15 +81,6 @@ public class AppConfig {
     @JsonProperty("download-success-rate")
     private double downloadSuccessRate = 0.99;
 
-    @JsonProperty("daemon")
-    private boolean daemon = false;
-
-    @JsonProperty("pid-file")
-    private String pidFile = "/tmp/cpe-sim.pid";
-
-    @JsonProperty("log-file")
-    private String logFile;
-
     @JsonProperty("session-timeout")
     private int sessionTimeout = 30;
 
@@ -155,12 +146,6 @@ public class AppConfig {
     public void setDownloadDelay(int downloadDelay) { this.downloadDelay = downloadDelay; }
     public double getDownloadSuccessRate() { return downloadSuccessRate; }
     public void setDownloadSuccessRate(double downloadSuccessRate) { this.downloadSuccessRate = downloadSuccessRate; }
-    public boolean isDaemon() { return daemon; }
-    public void setDaemon(boolean daemon) { this.daemon = daemon; }
-    public String getPidFile() { return pidFile; }
-    public void setPidFile(String pidFile) { this.pidFile = pidFile; }
-    public String getLogFile() { return logFile; }
-    public void setLogFile(String logFile) { this.logFile = logFile; }
     public int getSessionTimeout() { return sessionTimeout; }
     public void setSessionTimeout(int sessionTimeout) { this.sessionTimeout = sessionTimeout; }
     public boolean isXmppOnly() { return xmppOnly; }

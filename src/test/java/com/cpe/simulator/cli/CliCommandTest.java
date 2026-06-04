@@ -96,8 +96,6 @@ class CliCommandTest {
         assertEquals(5, cmd.rebootDelay);
         assertEquals(10, cmd.downloadDelay);
         assertEquals(0.99, cmd.downloadSuccessRate, 0.001);
-        assertFalse(cmd.daemon);
-        assertEquals("/tmp/cpe-sim.pid", cmd.pidFile);
     }
 
     @Test
@@ -233,14 +231,4 @@ class CliCommandTest {
         assertDoesNotThrow(() -> bar.complete("Done!"));
     }
 
-    @Test
-    void testDaemonHelperPidOperations() throws Exception {
-        String testPidFile = "/tmp/cpe-sim-test.pid";
-        DaemonHelper.writePidFile(testPidFile);
-        long pid = DaemonHelper.readPid(testPidFile);
-        assertTrue(pid > 0);
-        assertEquals(ProcessHandle.current().pid(), pid);
-        DaemonHelper.deletePidFile(testPidFile);
-        assertEquals(-1, DaemonHelper.readPid(testPidFile));
     }
-}

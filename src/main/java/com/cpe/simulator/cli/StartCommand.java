@@ -111,18 +111,6 @@ public class StartCommand implements Runnable {
     @Option(names = {"--config"}, description = "Config file path")
     String configPath;
 
-    @Option(names = {"--daemon"}, description = "Run as daemon")
-    boolean daemon;
-
-    @Option(names = {"--foreground"}, description = "Run in foreground (used by daemon mode)")
-    boolean foreground;
-
-    @Option(names = {"--pid-file"}, description = "PID file path", defaultValue = "/tmp/cpe-sim.pid")
-    String pidFile;
-
-    @Option(names = {"--log-file"}, description = "Log file path (daemon mode)")
-    String logFile;
-
     @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer, BOOT inform, and periodic reports")
     boolean xmppOnly;
 
@@ -158,11 +146,6 @@ public class StartCommand implements Runnable {
             System.exit(1);
         }
 
-        if (daemon && !foreground) {
-            DaemonHelper.daemonize(pidFile, logFile, new String[]{});
-            return;
-        }
-
         AppConfig config;
         try {
             config = ConfigLoader.load(configPath);
@@ -190,7 +173,6 @@ public class StartCommand implements Runnable {
             System.out.println("Shutdown hook triggered...");
             udsServer.stop();
             engine.stop();
-            DaemonHelper.deletePidFile(pidFile);
             shutdownLatch.countDown();
         }));
 
@@ -202,7 +184,6 @@ public class StartCommand implements Runnable {
             progressBar.update("UDS server started", 4, 4);
 
             progressBar.complete("Simulator started successfully");
-            DaemonHelper.writePidFile(pidFile);
 
             System.out.println("Mode: " + config.getMode());
             System.out.println("Devices: " + config.getCount());
@@ -262,11 +243,8 @@ public class StartCommand implements Runnable {
         config.setRebootDelay(rebootDelay);
         config.setDownloadDelay(downloadDelay);
         config.setDownloadSuccessRate(downloadSuccessRate);
-        config.setDaemon(daemon);
-        config.setPidFile(pidFile);
         config.setXmppOnly(xmppOnly);
         config.setNoPeriodic(noPeriodic);
-        if (logFile != null) config.setLogFile(logFile);
 
         AppConfig.XmppConfig xmpp = config.getXmpp();
         if (xmppHost != null) xmpp.setHost(xmppHost);
