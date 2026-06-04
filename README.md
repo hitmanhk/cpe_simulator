@@ -99,6 +99,9 @@ cpe-sim start [选项]
 | `--max-sessions <N>` | 最大并发 CWMP 会话数 | `1000` |
 | `--connect-batch <N>` | XMPP 批量连接数 | `1000` |
 | `--connect-batch-delay <ms>` | 批次间隔（毫秒） | `200` |
+| `--boot-batch-size <N>` | BOOT Inform 每批设备数 | `100` |
+| `--boot-batch-delay <ms>` | BOOT Inform 批次间隔（毫秒） | `1000` |
+| `--boot-jitter <ratio>` | BOOT Inform 批内随机抖动（0.0-1.0） | `0.5` |
 | `--conn-req-host <host>` | 回连监听地址 | `0.0.0.0` |
 | `--conn-req-port <port>` | 回连监听端口 | `7547` |
 | `--conn-req-user <user>` | 回连认证用户名 | - |
@@ -179,6 +182,9 @@ simulator:
   inform-interval: 300            # 定时 Inform 间隔（秒）
   inform-jitter: 0.3              # Inform 抖动比例
   max-sessions: 1000              # 最大并发会话数
+  boot-batch-size: 100            # BOOT Inform 每批设备数
+  boot-batch-delay: 1000          # BOOT Inform 批次间隔（毫秒）
+  boot-jitter: 0.5                # BOOT Inform 批内随机抖动
   conn-req-host: 0.0.0.0         # 回连监听地址
   conn-req-port: 7547             # 回连监听端口
   conn-req-user: ""               # 回连认证用户名（可选）
@@ -250,7 +256,8 @@ parameters:
 | `SimulationEngine` | 主编排器，管理设备生命周期 |
 | `DeviceManager` | CPE 实例的批量创建和管理 |
 | `DeviceRegistry` | 并发设备注册表，处理回连请求路由 |
-| `BatchConnector` | 速率限制的批量设备连接 |
+| `BatchConnector` | 批量设备状态初始化 |
+| `BootLauncher` | BOOT Inform 阶梯式分批启动，带 jitter 抖动 |
 | `CpeDevice` | 单个 CPE 实例，包含 DataModel 和会话状态 |
 | `CwmpSession` | CWMP 会话状态机（IDLE → INFORM_SENT → CPE_HOLD → ACS_HOLD） |
 | `CwmpClient` | CPE→ACS 的 HTTP 客户端，支持 Digest 认证 |
@@ -309,6 +316,7 @@ JVM 推荐参数：`-Xmx3g`（50K 设备场景）
 - 虚拟线程处理 IO 密集型操作（HTTP、XMPP）
 - Semaphore 限制并发会话数（可配置 `max-sessions`）
 - 批量连接速率控制（`connect-batch` + `connect-batch-delay`）
+- BOOT Inform 阶梯式分批启动（`boot-batch-size` + `boot-batch-delay` + `boot-jitter`），避免瞬间冲击 ACS
 - Inform 调度随机抖动，避免惊群效应
 
 ## 运行时交互
