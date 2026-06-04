@@ -27,6 +27,7 @@ public class CwmpClient {
 
     public CwmpClient(AppConfig config) {
         this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .executor(Executors.newVirtualThreadPerTaskExecutor())
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
