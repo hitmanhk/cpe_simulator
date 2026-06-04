@@ -27,20 +27,9 @@ public class BatchConnector {
             try {
                 for (int i = 0; i < devices.size(); i += batchSize) {
                     int end = Math.min(i + batchSize, devices.size());
-                    List<CpeDevice> batch = devices.subList(i, end);
-
-                    var executor = Executors.newVirtualThreadPerTaskExecutor();
-                    List<CompletableFuture<Void>> futures = batch.stream()
-                        .map(device -> CompletableFuture.runAsync(() -> {
-                            try {
-                                device.connect();
-                            } catch (Exception e) {
-                            }
-                        }, executor))
-                        .collect(java.util.stream.Collectors.toList());
-
-                    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
+                    for (int j = i; j < end; j++) {
+                        devices.get(j).connect();
+                    }
                     if (end < devices.size()) {
                         Thread.sleep(batchDelay);
                     }
