@@ -48,6 +48,15 @@ public class AppConfig {
     @JsonProperty("connect-batch-delay")
     private int connectBatchDelay = 200;
 
+    @JsonProperty("boot-batch-size")
+    private int bootBatchSize = 100;
+
+    @JsonProperty("boot-batch-delay")
+    private int bootBatchDelay = 1000;
+
+    @JsonProperty("boot-jitter")
+    private double bootJitter = 0.5;
+
     @JsonProperty("conn-req-host")
     private String connReqHost = "0.0.0.0";
 
@@ -118,6 +127,12 @@ public class AppConfig {
     public void setConnectBatch(int connectBatch) { this.connectBatch = connectBatch; }
     public int getConnectBatchDelay() { return connectBatchDelay; }
     public void setConnectBatchDelay(int connectBatchDelay) { this.connectBatchDelay = connectBatchDelay; }
+    public int getBootBatchSize() { return bootBatchSize; }
+    public void setBootBatchSize(int bootBatchSize) { this.bootBatchSize = bootBatchSize; }
+    public int getBootBatchDelay() { return bootBatchDelay; }
+    public void setBootBatchDelay(int bootBatchDelay) { this.bootBatchDelay = bootBatchDelay; }
+    public double getBootJitter() { return bootJitter; }
+    public void setBootJitter(double bootJitter) { this.bootJitter = bootJitter; }
     public String getConnReqHost() { return connReqHost; }
     public void setConnReqHost(String connReqHost) { this.connReqHost = connReqHost; }
     public int getConnReqPort() { return connReqPort; }

@@ -54,6 +54,15 @@ public class StartCommand implements Runnable {
     @Option(names = {"--connect-batch-delay"}, description = "Batch delay in ms", defaultValue = "200")
     int connectBatchDelay;
 
+    @Option(names = {"--boot-batch-size"}, description = "BOOT inform batch size", defaultValue = "100")
+    int bootBatchSize;
+
+    @Option(names = {"--boot-batch-delay"}, description = "BOOT batch delay in ms", defaultValue = "1000")
+    int bootBatchDelay;
+
+    @Option(names = {"--boot-jitter"}, description = "BOOT inform jitter ratio (0.0-1.0)", defaultValue = "0.5")
+    double bootJitter;
+
     @Option(names = {"--conn-req-host"}, description = "Connection request listen host", defaultValue = "0.0.0.0")
     String connReqHost;
 
@@ -239,6 +248,9 @@ public class StartCommand implements Runnable {
         config.setMaxSessions(maxSessions);
         config.setConnectBatch(connectBatch);
         config.setConnectBatchDelay(connectBatchDelay);
+        config.setBootBatchSize(bootBatchSize);
+        config.setBootBatchDelay(bootBatchDelay);
+        config.setBootJitter(bootJitter);
         config.setConnReqHost(connReqHost);
         config.setConnReqPort(connReqPort);
         if (connReqUser != null) config.setConnReqUser(connReqUser);
