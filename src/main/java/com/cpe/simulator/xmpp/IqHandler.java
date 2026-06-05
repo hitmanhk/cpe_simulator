@@ -13,11 +13,13 @@ public class IqHandler {
     private final XmppConnection connection;
     private final Consumer<String> connectionRequestCallback;
     private final PingHandler pingHandler;
+    private final ConnReqAuthHandler connReqAuthHandler;
 
-    public IqHandler(XmppConnection connection, Consumer<String> connectionRequestCallback, PingHandler pingHandler) {
+    public IqHandler(XmppConnection connection, Consumer<String> connectionRequestCallback, PingHandler pingHandler, ConnReqAuthHandler connReqAuthHandler) {
         this.connection = connection;
         this.connectionRequestCallback = connectionRequestCallback;
         this.pingHandler = pingHandler;
+        this.connReqAuthHandler = connReqAuthHandler;
     }
 
     public void handleIq(XmppStanza.IqStanza iq) {
@@ -43,17 +45,7 @@ public class IqHandler {
     }
 
     private void handleConnectionRequest(XmppStanza.IqStanza iq) {
-        String resultXml = "<iq type=\"result\" id=\"" + XmlUtil.escapeXml(iq.id()) + "\"";
-        if (iq.from() != null) {
-            resultXml += " to=\"" + XmlUtil.escapeXml(iq.from()) + "\"";
-        }
-        resultXml += "/>";
-        connection.sendStanza(new XmppStanza.RawXml(resultXml));
-
-        log.info("Connection request received for device {}", connection.getDeviceId());
-        if (connectionRequestCallback != null) {
-            connectionRequestCallback.accept(connection.getDeviceId());
-        }
+        connReqAuthHandler.handle(iq, connectionRequestCallback);
     }
 
     private void sendError(XmppStanza.IqStanza iq) {

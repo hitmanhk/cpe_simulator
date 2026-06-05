@@ -78,6 +78,9 @@ public class StartCommand implements Runnable {
     @Option(names = {"--conn-req-password"}, description = "Connection request auth password")
     String connReqPassword;
 
+    @Option(names = {"--conn-req-algorithm"}, description = "Connection request digest algorithm (MD5 or SHA-256)", defaultValue = "MD5")
+    String connReqAlgorithm;
+
     @Option(names = {"--xmpp-host"}, description = "XMPP server host")
     String xmppHost;
 
@@ -240,6 +243,7 @@ public class StartCommand implements Runnable {
         config.setConnReqPort(connReqPort);
         if (connReqUser != null) config.setConnReqUser(connReqUser);
         if (connReqPassword != null) config.setConnReqPassword(connReqPassword);
+        if (connReqAlgorithm != null) config.setConnReqAlgorithm(connReqAlgorithm);
         config.setRebootDelay(rebootDelay);
         config.setDownloadDelay(downloadDelay);
         config.setDownloadSuccessRate(downloadSuccessRate);

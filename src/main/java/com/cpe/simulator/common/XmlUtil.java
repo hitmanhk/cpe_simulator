@@ -14,7 +14,7 @@ public final class XmlUtil {
     public static final String NS_XMPP_BIND = "urn:ietf:params:xml:ns:xmpp-bind";
     public static final String NS_XMPP_SESSION = "urn:ietf:params:xml:ns:xmpp-session";
     public static final String NS_XMPP_PING = "urn:xmpp:ping";
-    public static final String NS_CWMP_XMPP_CONN_REQ = "urn:broadband-forum-org:cwmp:xmppConnReq";
+    public static final String NS_CWMP_XMPP_CONN_REQ = "urn:broadband-forum-org:cwmp:xmppConnReq-1-0";
 
     private XmlUtil() {}
 

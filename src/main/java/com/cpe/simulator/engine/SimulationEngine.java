@@ -6,6 +6,7 @@ import com.cpe.simulator.cwmp.CwmpClient;
 import com.cpe.simulator.cwmp.CwmpServer;
 import com.cpe.simulator.model.DataModel;
 import com.cpe.simulator.model.ModelLoader;
+import com.cpe.simulator.xmpp.ConnReqAuthConfig;
 import com.cpe.simulator.xmpp.XmppConnection;
 import com.cpe.simulator.xmpp.XmppEngine;
 
@@ -99,12 +100,18 @@ public class SimulationEngine {
         }
 
         if (config.isNatMode()) {
+            ConnReqAuthConfig connReqAuthConfig = new ConnReqAuthConfig(
+                config.isConnReqAuthEnabled(),
+                config.getConnReqUser(),
+                config.getConnReqPassword(),
+                config.getConnReqAlgorithm());
+
             xmppEngine = new XmppEngine(config, deviceId -> {
                 CpeDevice device = (CpeDevice) deviceRegistry.getDevice(deviceId);
                 if (device != null && !device.isSessionActive()) {
                     device.triggerInform("6 CONNECTION REQUEST");
                 }
-            });
+            }, connReqAuthConfig);
 
             List<XmppConnection> xmppConnections = new ArrayList<>();
             for (CpeDevice device : devices) {

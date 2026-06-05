@@ -18,22 +18,24 @@ public class XmppEngine {
 
     private final AppConfig appConfig;
     private final Consumer<String> connectionRequestCallback;
+    private final ConnReqAuthConfig connReqAuthConfig;
     private final List<XmppConnection> connections = new CopyOnWriteArrayList<>();
     private final NioEventLoopGroup eventLoopGroup;
     private final ScheduledExecutorService scheduler;
     private final ReconnectPolicy reconnectPolicy;
     private volatile boolean running = false;
 
-    public XmppEngine(AppConfig appConfig, Consumer<String> connectionRequestCallback) {
+    public XmppEngine(AppConfig appConfig, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
         this.appConfig = appConfig;
         this.connectionRequestCallback = connectionRequestCallback;
+        this.connReqAuthConfig = connReqAuthConfig;
         this.eventLoopGroup = new NioEventLoopGroup(Math.max(2, Runtime.getRuntime().availableProcessors()));
         this.scheduler = Executors.newScheduledThreadPool(2);
         this.reconnectPolicy = new ReconnectPolicy();
     }
 
     public XmppConnection createConnection(String deviceId) {
-        return new XmppConnection(deviceId, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback);
+        return new XmppConnection(deviceId, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback, connReqAuthConfig);
     }
 
     public void start(List<XmppConnection> connections) {

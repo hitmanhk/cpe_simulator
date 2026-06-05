@@ -38,7 +38,7 @@ class XmppStateBridgeTest {
         );
         device.initialize();
 
-        xmppConnection = new XmppConnection(device.getDeviceId(), config.getXmpp(), null, null);
+        xmppConnection = new XmppConnection(device.getDeviceId(), config.getXmpp(), null, null, new ConnReqAuthConfig(false, null, null, "MD5"));
         device.setXmppConnection(xmppConnection);
     }
 

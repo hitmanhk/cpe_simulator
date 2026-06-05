@@ -325,4 +325,41 @@ class XmppStreamDecoderTest {
         XmppStanza.AuthChallenge authChallenge = (XmppStanza.AuthChallenge) stanza;
         assertNull(authChallenge.payload());
     }
+
+    @Test
+    void testDecodeConnReqIqWithAuthAttrs() {
+        String iq = "<iq type=\"get\" id=\"cr1\" from=\"acs@iot.example.com\" to=\"cpe001@iot.example.com/sim\">"
+            + "<connReq xmlns=\"urn:broadband-forum-org:cwmp:xmppConnReq-1-0\" username=\"admin\" response=\"abc\" nonce=\"n1\" realm=\"iot.example.com\" algorithm=\"MD5\"/>"
+            + "</iq>";
+
+        writeXml(iq);
+
+        XmppStanza stanza = channel.readInbound();
+        assertNotNull(stanza);
+        assertInstanceOf(XmppStanza.IqStanza.class, stanza);
+
+        XmppStanza.IqStanza iqStanza = (XmppStanza.IqStanza) stanza;
+        assertEquals("cr1", iqStanza.id());
+        assertEquals("get", iqStanza.type());
+        assertEquals("connReq", iqStanza.childElement());
+        assertEquals("urn:broadband-forum-org:cwmp:xmppConnReq-1-0", iqStanza.childNamespace());
+    }
+
+    @Test
+    void testDecodeConnReqIqNoAttrs() {
+        String iq = "<iq type=\"get\" id=\"cr2\" from=\"acs@iot.example.com\" to=\"cpe001@iot.example.com/sim\">"
+            + "<connReq xmlns=\"urn:broadband-forum-org:cwmp:xmppConnReq-1-0\"/>"
+            + "</iq>";
+
+        writeXml(iq);
+
+        XmppStanza stanza = channel.readInbound();
+        assertNotNull(stanza);
+        assertInstanceOf(XmppStanza.IqStanza.class, stanza);
+
+        XmppStanza.IqStanza iqStanza = (XmppStanza.IqStanza) stanza;
+        assertEquals("cr2", iqStanza.id());
+        assertEquals("connReq", iqStanza.childElement());
+        assertEquals("urn:broadband-forum-org:cwmp:xmppConnReq-1-0", iqStanza.childNamespace());
+    }
 }

@@ -33,9 +33,10 @@ public class XmppConnection {
     private final AppConfig.XmppConfig config;
     private final InetAddress localInetAddress;
     private final Consumer<String> connectionRequestCallback;
+    private final ConnReqAuthConfig connReqAuthConfig;
     private volatile Consumer<ConnectionState> onStateChangeCallback;
 
-    public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback) {
+    public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
         this.deviceId = deviceId;
         this.config = config;
         try {
@@ -45,6 +46,7 @@ public class XmppConnection {
             throw new IllegalArgumentException("Invalid local-address: " + localAddress, e);
         }
         this.connectionRequestCallback = connectionRequestCallback;
+        this.connReqAuthConfig = connReqAuthConfig;
     }
 
     public CompletableFuture<Void> connect(EventLoopGroup eventLoopGroup) {
@@ -56,7 +58,8 @@ public class XmppConnection {
         BindHandler bindHandler = new BindHandler(this, config);
         PresenceHandler presenceHandler = new PresenceHandler(this);
         PingHandler pingHandler = new PingHandler(this, config);
-        IqHandler iqHandler = new IqHandler(this, connectionRequestCallback, pingHandler);
+        ConnReqAuthHandler connReqAuthHandler = new ConnReqAuthHandler(this, connReqAuthConfig);
+        IqHandler iqHandler = new IqHandler(this, connectionRequestCallback, pingHandler, connReqAuthHandler);
 
         streamHandler.setSaslHandler(saslHandler);
         streamHandler.setBindHandler(bindHandler);
