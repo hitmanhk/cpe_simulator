@@ -327,9 +327,11 @@ class XmppStreamDecoderTest {
     }
 
     @Test
-    void testDecodeConnReqIqWithAuthAttrs() {
+    void testDecodeConnReqIqWithChildElements() {
         String iq = "<iq type=\"get\" id=\"cr1\" from=\"acs@iot.example.com\" to=\"cpe001@iot.example.com/sim\">"
-            + "<connReq xmlns=\"urn:broadband-forum-org:cwmp:xmppConnReq-1-0\" username=\"admin\" response=\"abc\" nonce=\"n1\" realm=\"iot.example.com\" algorithm=\"MD5\"/>"
+            + "<connectionRequest xmlns=\"urn:broadband-forum-org:cwmp:xmppConnReq-1-0\">"
+            + "<username>admin</username><password>secret</password>"
+            + "</connectionRequest>"
             + "</iq>";
 
         writeXml(iq);
@@ -341,14 +343,14 @@ class XmppStreamDecoderTest {
         XmppStanza.IqStanza iqStanza = (XmppStanza.IqStanza) stanza;
         assertEquals("cr1", iqStanza.id());
         assertEquals("get", iqStanza.type());
-        assertEquals("connReq", iqStanza.childElement());
+        assertEquals("connectionRequest", iqStanza.childElement());
         assertEquals("urn:broadband-forum-org:cwmp:xmppConnReq-1-0", iqStanza.childNamespace());
     }
 
     @Test
-    void testDecodeConnReqIqNoAttrs() {
+    void testDecodeConnReqIqEmpty() {
         String iq = "<iq type=\"get\" id=\"cr2\" from=\"acs@iot.example.com\" to=\"cpe001@iot.example.com/sim\">"
-            + "<connReq xmlns=\"urn:broadband-forum-org:cwmp:xmppConnReq-1-0\"/>"
+            + "<connectionRequest xmlns=\"urn:broadband-forum-org:cwmp:xmppConnReq-1-0\"/>"
             + "</iq>";
 
         writeXml(iq);
@@ -359,7 +361,7 @@ class XmppStreamDecoderTest {
 
         XmppStanza.IqStanza iqStanza = (XmppStanza.IqStanza) stanza;
         assertEquals("cr2", iqStanza.id());
-        assertEquals("connReq", iqStanza.childElement());
+        assertEquals("connectionRequest", iqStanza.childElement());
         assertEquals("urn:broadband-forum-org:cwmp:xmppConnReq-1-0", iqStanza.childNamespace());
     }
 }

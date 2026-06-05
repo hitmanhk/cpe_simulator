@@ -72,9 +72,6 @@ public class AppConfig {
     @JsonProperty("conn-req-password")
     private String connReqPassword;
 
-    @JsonProperty("conn-req-algorithm")
-    private String connReqAlgorithm = "MD5";
-
     @JsonProperty("reboot-delay")
     private int rebootDelay = 5;
 
@@ -143,8 +140,6 @@ public class AppConfig {
     public void setConnReqUser(String connReqUser) { this.connReqUser = connReqUser; }
     public String getConnReqPassword() { return connReqPassword; }
     public void setConnReqPassword(String connReqPassword) { this.connReqPassword = connReqPassword; }
-    public String getConnReqAlgorithm() { return connReqAlgorithm; }
-    public void setConnReqAlgorithm(String connReqAlgorithm) { this.connReqAlgorithm = connReqAlgorithm; }
     public int getRebootDelay() { return rebootDelay; }
     public void setRebootDelay(int rebootDelay) { this.rebootDelay = rebootDelay; }
     public int getDownloadDelay() { return downloadDelay; }

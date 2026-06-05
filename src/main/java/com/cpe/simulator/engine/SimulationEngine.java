@@ -103,8 +103,7 @@ public class SimulationEngine {
             ConnReqAuthConfig connReqAuthConfig = new ConnReqAuthConfig(
                 config.isConnReqAuthEnabled(),
                 config.getConnReqUser(),
-                config.getConnReqPassword(),
-                config.getConnReqAlgorithm());
+                config.getConnReqPassword());
 
             xmppEngine = new XmppEngine(config, deviceId -> {
                 CpeDevice device = (CpeDevice) deviceRegistry.getDevice(deviceId);

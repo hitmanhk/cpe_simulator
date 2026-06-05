@@ -43,11 +43,10 @@ class IqHandlerTest {
         }).when(connection).sendStanza(stanzaCaptor.capture());
     }
 
-    private XmppStanza.IqStanza createConnReqIq() {
+    private XmppStanza.IqStanza createConnReqIq(String connReqContent) {
         String iqXml = "<iq type=\"get\" id=\"cr1\" from=\"acs@iot.example.com\" to=\"cpe001@iot.example.com/sim\">"
-            + "<connReq xmlns=\"" + XmlUtil.NS_CWMP_XMPP_CONN_REQ + "\"/>"
-            + "</iq>";
-        return new XmppStanza.IqStanza("cr1", "get", "acs@iot.example.com", "cpe001@iot.example.com/sim", "connReq", XmlUtil.NS_CWMP_XMPP_CONN_REQ, iqXml);
+            + connReqContent + "</iq>";
+        return new XmppStanza.IqStanza("cr1", "get", "acs@iot.example.com", "cpe001@iot.example.com/sim", "connectionRequest", XmlUtil.NS_CWMP_XMPP_CONN_REQ, iqXml);
     }
 
     private XmppStanza.RawXml getLastSentRawXml() {
@@ -61,17 +60,15 @@ class IqHandlerTest {
 
     @Test
     void authDisabled_connReq_directCallback() {
-        ConnReqAuthConfig authConfig = new ConnReqAuthConfig(false, null, null, "MD5");
-        ConnReqAuthHandler authHandler = new ConnReqAuthHandler(connection, authConfig);
         PingHandler pingHandler = new PingHandler(connection, xmppConfig);
-        IqHandler iqHandler = new IqHandler(connection, null, pingHandler, authHandler);
 
         AtomicReference<String> callbackValue = new AtomicReference<>();
-        ConnReqAuthConfig enabledConfig = new ConnReqAuthConfig(false, null, null, "MD5");
-        ConnReqAuthHandler enabledAuthHandler = new ConnReqAuthHandler(connection, enabledConfig);
-        IqHandler enabledIqHandler = new IqHandler(connection, callbackValue::set, pingHandler, enabledAuthHandler);
+        ConnReqAuthConfig authConfig = new ConnReqAuthConfig(false, null, null);
+        ConnReqAuthHandler authHandler = new ConnReqAuthHandler(connection, authConfig);
+        IqHandler iqHandler = new IqHandler(connection, callbackValue::set, pingHandler, authHandler);
 
-        enabledIqHandler.handleIq(createConnReqIq());
+        iqHandler.handleIq(createConnReqIq(
+            "<connectionRequest xmlns=\"" + XmlUtil.NS_CWMP_XMPP_CONN_REQ + "\"/>"));
 
         XmppStanza.RawXml sent = getLastSentRawXml();
         assertNotNull(sent);
@@ -80,17 +77,42 @@ class IqHandlerTest {
     }
 
     @Test
-    void authEnabled_connReq_delegatesToAuthHandler() {
-        ConnReqAuthConfig authConfig = new ConnReqAuthConfig(true, "admin", "secret", "MD5");
-        ConnReqAuthHandler authHandler = new ConnReqAuthHandler(connection, authConfig);
+    void authEnabled_connReq_plaintextAccepted() {
         PingHandler pingHandler = new PingHandler(connection, xmppConfig);
+
+        AtomicReference<String> callbackValue = new AtomicReference<>();
+        ConnReqAuthConfig authConfig = new ConnReqAuthConfig(true, "admin", "secret");
+        ConnReqAuthHandler authHandler = new ConnReqAuthHandler(connection, authConfig);
+        IqHandler iqHandler = new IqHandler(connection, callbackValue::set, pingHandler, authHandler);
+
+        iqHandler.handleIq(createConnReqIq(
+            "<connectionRequest xmlns=\"" + XmlUtil.NS_CWMP_XMPP_CONN_REQ + "\">"
+            + "<username>admin</username><password>secret</password>"
+            + "</connectionRequest>"));
+
+        XmppStanza.RawXml sent = getLastSentRawXml();
+        assertNotNull(sent);
+        assertTrue(sent.xml().contains("type=\"result\""));
+        assertEquals("000000-SimCPE-SIM00001", callbackValue.get());
+    }
+
+    @Test
+    void authEnabled_connReq_plaintextRejected() {
+        PingHandler pingHandler = new PingHandler(connection, xmppConfig);
+
+        ConnReqAuthConfig authConfig = new ConnReqAuthConfig(true, "admin", "secret");
+        ConnReqAuthHandler authHandler = new ConnReqAuthHandler(connection, authConfig);
         IqHandler iqHandler = new IqHandler(connection, null, pingHandler, authHandler);
 
-        iqHandler.handleIq(createConnReqIq());
+        iqHandler.handleIq(createConnReqIq(
+            "<connectionRequest xmlns=\"" + XmlUtil.NS_CWMP_XMPP_CONN_REQ + "\">"
+            + "<username>admin</username><password>wrong</password>"
+            + "</connectionRequest>"));
 
         XmppStanza.RawXml sent = getLastSentRawXml();
         assertNotNull(sent);
         assertTrue(sent.xml().contains("type=\"error\""));
-        assertTrue(sent.xml().contains("<challenge"));
+        assertTrue(sent.xml().contains("<error type=\"cancel\">"));
+        assertTrue(sent.xml().contains("<not-authorized"));
     }
 }
