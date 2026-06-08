@@ -163,3 +163,8 @@ parameters:
     writable: false
     notification: 0
     multiInstance: true
+  - path: Device.XMPP.Connection.1.Password
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 2

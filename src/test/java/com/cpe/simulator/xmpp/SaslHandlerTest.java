@@ -117,7 +117,7 @@ class SaslHandlerTest {
         XmppStanza.AuthResponse authResponse = (XmppStanza.AuthResponse) sent;
         assertEquals("challenge-response", authResponse.payload());
 
-        verify(mockMechanism).getChallengeResponse("server-challenge-data", "xmpp", "secret");
+        verify(mockMechanism).getChallengeResponse("server-challenge-data", "001", "secret");
     }
 
     @Test

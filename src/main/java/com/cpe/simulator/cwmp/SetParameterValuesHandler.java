@@ -8,6 +8,9 @@ import java.util.List;
 
 public class SetParameterValuesHandler implements RpcHandler {
 
+    private static final String XMPP_PASSWORD_TR181 = "Device.XMPP.Connection.1.Password";
+    private static final String XMPP_PASSWORD_TR098 = "InternetGatewayDevice.XMPP.Connection.1.Password";
+
     private final SoapParser soapParser = new SoapParser();
     private final SoapBuilder soapBuilder = new SoapBuilder();
 
@@ -75,6 +78,18 @@ public class SetParameterValuesHandler implements RpcHandler {
 
             if (valueChangeDetected) {
                 device.triggerInform("4 VALUE CHANGE");
+            }
+
+            boolean xmppPasswordSet = false;
+            for (SoapEnvelope.ParameterInfo param : params) {
+                if (XMPP_PASSWORD_TR181.equals(param.name()) || XMPP_PASSWORD_TR098.equals(param.name())) {
+                    xmppPasswordSet = true;
+                    break;
+                }
+            }
+
+            if (xmppPasswordSet) {
+                device.connectXmpp();
             }
 
             response.getParameters().put("Status", "0");

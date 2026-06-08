@@ -19,4 +19,5 @@ public interface DeviceContext {
     void addPendingTransfer(CwmpSession.PendingTransfer transfer);
     List<CwmpSession.PendingTransfer> getPendingTransfers();
     void clearPendingTransfers();
+    void connectXmpp();
 }

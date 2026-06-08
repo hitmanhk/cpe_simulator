@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Locale;
 
 public class SaslHandler {
 
@@ -54,10 +55,11 @@ public class SaslHandler {
         }
 
         connection.setState(XmppConnection.ConnectionState.AUTHENTICATING);
-        String username = "xmpp";
+        String username = connection.getDeviceId().toLowerCase(Locale.ROOT);
         authUsername = username;
-        authPassword = config.getPassword();
-        String initialResponse = selectedMechanism.getInitialResponse(username, config.getPassword());
+        String password = connection.getXmppPassword() != null ? connection.getXmppPassword() : config.getPassword();
+        authPassword = password;
+        String initialResponse = selectedMechanism.getInitialResponse(username, password);
         connection.sendStanza(new XmppStanza.AuthStanza(selectedMechanism.getMechanismName(), initialResponse));
         log.debug("SASL {} auth started for device {}", selectedMechanism.getMechanismName(), connection.getDeviceId());
     }

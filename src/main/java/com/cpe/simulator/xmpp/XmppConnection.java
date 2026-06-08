@@ -35,6 +35,7 @@ public class XmppConnection {
     private final Consumer<String> connectionRequestCallback;
     private final ConnReqAuthConfig connReqAuthConfig;
     private volatile Consumer<ConnectionState> onStateChangeCallback;
+    private volatile String xmppPassword;
 
     public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
         this.deviceId = deviceId;
@@ -163,5 +164,13 @@ public class XmppConnection {
 
     public AppConfig.XmppConfig getConfig() {
         return config;
+    }
+
+    public String getXmppPassword() {
+        return xmppPassword;
+    }
+
+    public void setXmppPassword(String xmppPassword) {
+        this.xmppPassword = xmppPassword;
     }
 }

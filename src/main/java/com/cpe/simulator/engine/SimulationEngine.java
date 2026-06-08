@@ -112,26 +112,33 @@ public class SimulationEngine {
                 }
             }, connReqAuthConfig);
 
-            List<XmppConnection> xmppConnections = new ArrayList<>();
-            for (CpeDevice device : devices) {
-                XmppConnection conn = xmppEngine.createConnection(device.getDeviceId());
-                conn.onStateChange(xmppState -> {
-                    switch (xmppState) {
-                        case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                        case FAILED -> {
-                            device.setState(CpeDevice.DeviceState.OFFLINE);
-                            SimLogger.error("XMPP connection failed for device {}", device.getDeviceId());
+            if (config.isXmppOnly()) {
+                List<XmppConnection> xmppConnections = new ArrayList<>();
+                for (CpeDevice device : devices) {
+                    XmppConnection conn = xmppEngine.createConnection(device.getDeviceId());
+                    conn.onStateChange(xmppState -> {
+                        switch (xmppState) {
+                            case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
+                            case FAILED -> {
+                                device.setState(CpeDevice.DeviceState.OFFLINE);
+                                SimLogger.error("XMPP connection failed for device {}", device.getDeviceId());
+                            }
+                            case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
+                            default -> {}
                         }
-                        case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
-                        default -> {}
-                    }
-                });
-                device.setXmppConnection(conn);
-                xmppConnections.add(conn);
+                    });
+                    device.setXmppConnection(conn);
+                    xmppConnections.add(conn);
+                }
+                xmppEngine.start(xmppConnections);
+                SimLogger.info("XMPP engine started with {} connections (xmpp-only mode)", xmppConnections.size());
+            } else {
+                for (CpeDevice device : devices) {
+                    device.setXmppEngine(xmppEngine);
+                }
+                xmppEngine.start(List.of());
+                SimLogger.info("XMPP engine started, waiting for ACS to provision XMPP credentials");
             }
-
-            xmppEngine.start(xmppConnections);
-            SimLogger.info("XMPP engine started with {} connections", xmppConnections.size());
         }
 
         informScheduler = new InformScheduler(config);

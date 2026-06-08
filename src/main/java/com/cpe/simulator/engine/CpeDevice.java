@@ -5,7 +5,9 @@ import com.cpe.simulator.common.IdGenerator;
 import com.cpe.simulator.common.SimLogger;
 import com.cpe.simulator.cwmp.*;
 import com.cpe.simulator.model.DataModel;
+import com.cpe.simulator.model.ParameterNode;
 import com.cpe.simulator.xmpp.XmppConnection;
+import com.cpe.simulator.xmpp.XmppEngine;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,6 +22,9 @@ public class CpeDevice implements DeviceContext {
 
     public enum DeviceState { CREATED, CONNECTING, ONLINE, OFFLINE }
 
+    private static final String XMPP_PASSWORD_TR181 = "Device.XMPP.Connection.1.Password";
+    private static final String XMPP_PASSWORD_TR098 = "InternetGatewayDevice.XMPP.Connection.1.Password";
+
     private final String deviceId;
     private final String serialNumber;
     private final String oui;
@@ -27,6 +32,7 @@ public class CpeDevice implements DeviceContext {
     private final DataModel dataModel;
     private final CwmpSession session;
     private volatile XmppConnection xmppConnection;
+    private volatile XmppEngine xmppEngine;
     private final AppConfig config;
     private final RpcRegistry rpcRegistry;
     private final CwmpClient cwmpClient;
@@ -363,6 +369,55 @@ public class CpeDevice implements DeviceContext {
 
     public void setXmppConnection(XmppConnection xmppConnection) {
         this.xmppConnection = xmppConnection;
+    }
+
+    public XmppEngine getXmppEngine() {
+        return xmppEngine;
+    }
+
+    public void setXmppEngine(XmppEngine xmppEngine) {
+        this.xmppEngine = xmppEngine;
+    }
+
+    @Override
+    public void connectXmpp() {
+        if (xmppConnection != null || xmppEngine == null) {
+            return;
+        }
+
+        String password = null;
+        ParameterNode node181 = dataModel.getNode(XMPP_PASSWORD_TR181);
+        if (node181 != null && node181.getValue() != null && !node181.getValue().getValue().isEmpty()) {
+            password = node181.getValue().getValue();
+        } else {
+            ParameterNode node098 = dataModel.getNode(XMPP_PASSWORD_TR098);
+            if (node098 != null && node098.getValue() != null && !node098.getValue().getValue().isEmpty()) {
+                password = node098.getValue().getValue();
+            }
+        }
+
+        if (password == null) {
+            return;
+        }
+
+        XmppConnection conn = xmppEngine.createConnection(deviceId);
+        conn.setXmppPassword(password);
+        conn.onStateChange(xmppState -> {
+            switch (xmppState) {
+                case ONLINE -> {
+                    state = DeviceState.ONLINE;
+                    SimLogger.device(deviceId, "XMPP connected, device online");
+                }
+                case FAILED -> {
+                    state = DeviceState.OFFLINE;
+                    SimLogger.error("XMPP connection failed for device {}", deviceId);
+                }
+                case DISCONNECTED -> state = DeviceState.OFFLINE;
+                default -> {}
+            }
+        });
+        xmppConnection = conn;
+        xmppEngine.addConnection(conn);
     }
 
     public RpcRegistry getRpcRegistry() {

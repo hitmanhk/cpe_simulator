@@ -30,6 +30,7 @@ class Tr098InformTest {
         @Override public void addPendingTransfer(CwmpSession.PendingTransfer transfer) {}
         @Override public java.util.List<CwmpSession.PendingTransfer> getPendingTransfers() { return java.util.List.of(); }
         @Override public void clearPendingTransfers() {}
+        @Override public void connectXmpp() {}
     }
 
     @Test

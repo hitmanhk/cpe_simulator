@@ -125,4 +125,13 @@ public class XmppEngine {
     public boolean isRunning() {
         return running;
     }
+
+    public void addConnection(XmppConnection conn) {
+        connections.add(conn);
+        try {
+            conn.connect(eventLoopGroup);
+        } catch (Exception e) {
+            log.error("Failed to connect device {}", conn.getDeviceId(), e);
+        }
+    }
 }
