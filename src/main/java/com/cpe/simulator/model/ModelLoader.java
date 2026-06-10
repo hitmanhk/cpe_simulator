@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -17,32 +18,42 @@ public class ModelLoader {
 
     public static DataModel load(String modelSpec) {
         if ("tr181".equalsIgnoreCase(modelSpec)) {
-            return loadFromClasspath("models/tr181-default.yaml");
+            return loadFromFile(resolveModelPath("tr181.yaml"));
         } else if ("tr098".equalsIgnoreCase(modelSpec)) {
-            return loadFromClasspath("models/tr098-default.yaml");
+            return loadFromFile(resolveModelPath("tr098.yaml"));
         } else {
             return loadFromFile(modelSpec);
         }
     }
 
-    public static DataModel loadFromClasspath(String resource) {
-        try (InputStream is = ModelLoader.class.getClassLoader().getResourceAsStream(resource)) {
-            if (is == null) {
-                throw new IllegalArgumentException("Classpath resource not found: " + resource);
-            }
-            JsonNode root = YAML_MAPPER.readTree(is);
-            return buildDataModel(root);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load model from classpath: " + resource, e);
-        }
-    }
-
     public static DataModel loadFromFile(String filePath) {
-        try (InputStream is = Files.newInputStream(Path.of(filePath))) {
+        Path path = Path.of(filePath);
+        if (!Files.exists(path)) {
+            throw new RuntimeException("Model file not found: " + path.toAbsolutePath()
+                    + ". Expected models/tr181.yaml or models/tr098.yaml in the same directory as the JAR file.");
+        }
+        try (InputStream is = Files.newInputStream(path)) {
             JsonNode root = YAML_MAPPER.readTree(is);
             return buildDataModel(root);
         } catch (IOException e) {
             throw new RuntimeException("Failed to load model from file: " + filePath, e);
+        }
+    }
+
+    private static String resolveModelPath(String modelName) {
+        return resolveBaseDir().resolve("models").resolve(modelName).toString();
+    }
+
+    private static Path resolveBaseDir() {
+        try {
+            Path jarPath = Path.of(ModelLoader.class.getProtectionDomain()
+                    .getCodeSource().getLocation().toURI());
+            if (Files.isDirectory(jarPath)) {
+                return Path.of(System.getProperty("user.dir"));
+            }
+            return jarPath.getParent();
+        } catch (URISyntaxException e) {
+            return Path.of(System.getProperty("user.dir"));
         }
     }
 
