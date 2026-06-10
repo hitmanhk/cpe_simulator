@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ModelLoaderTest {
 
     @Test
-    void testLoadTr181FromClasspath() {
+    void testLoadTr181FromExternalFile() {
         DataModel model = ModelLoader.load("tr181");
         assertNotNull(model);
         assertNotNull(model.getRoot());
@@ -21,7 +21,7 @@ class ModelLoaderTest {
     }
 
     @Test
-    void testLoadTr098FromClasspath() {
+    void testLoadTr098FromExternalFile() {
         DataModel model = ModelLoader.load("tr098");
         assertNotNull(model);
         assertNotNull(model.getRoot());
@@ -154,6 +154,8 @@ class ModelLoaderTest {
 
     @Test
     void testLoadUnknownModelSpec() {
-        assertThrows(RuntimeException.class, () -> ModelLoader.load("nonexistent"));
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> ModelLoader.load("nonexistent"));
+        assertTrue(ex.getMessage().contains("Model file not found"),
+              "Error message should mention 'Model file not found': " + ex.getMessage());
     }
 }

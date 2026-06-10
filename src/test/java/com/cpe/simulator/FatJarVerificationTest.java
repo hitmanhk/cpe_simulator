@@ -47,19 +47,7 @@ class FatJarVerificationTest {
         assertNotNull(resource, "application.yaml should be on classpath");
     }
 
-    @Test
-    @Timeout(10)
-    void testTr181ModelOnClasspath() {
-        var resource = getClass().getClassLoader().getResource("models/tr181-default.yaml");
-        assertNotNull(resource, "models/tr181-default.yaml should be on classpath");
-    }
-
-    @Test
-    @Timeout(10)
-    void testTr098ModelOnClasspath() {
-        var resource = getClass().getClassLoader().getResource("models/tr098-default.yaml");
-        assertNotNull(resource, "models/tr098-default.yaml should be on classpath");
-    }
+    
 
     @Test
     @Timeout(10)

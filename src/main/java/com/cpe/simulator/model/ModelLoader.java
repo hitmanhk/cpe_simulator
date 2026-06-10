@@ -54,6 +54,8 @@ public class ModelLoader {
             return jarPath.getParent();
         } catch (URISyntaxException e) {
             return Path.of(System.getProperty("user.dir"));
+        } catch (NullPointerException e) {
+            return Path.of(System.getProperty("user.dir"));
         }
     }
 

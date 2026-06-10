@@ -27,7 +27,7 @@ public class StartCommand implements Runnable {
     @Option(names = {"--acs-password"}, description = "ACS password")
     String acsPassword;
 
-    @Option(names = {"--model"}, description = "Data model: tr181, tr098, or file path", defaultValue = "tr181")
+    @Option(names = {"--model"}, description = "Data model: tr181, tr098, or file path. Shortcut names resolve to models/ directory next to the JAR", defaultValue = "tr181")
     String model;
 
     @Option(names = {"--oui"}, description = "OUI prefix", defaultValue = "000000")
