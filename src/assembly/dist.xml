@@ -4,8 +4,10 @@
     <id>dist</id>
     <formats>
         <format>dir</format>
+        <format>zip</format>
     </formats>
-    <includeBaseDirectory>false</includeBaseDirectory>
+    <includeBaseDirectory>true</includeBaseDirectory>
+    <baseDirectory>cpe-simulator</baseDirectory>
     <files>
         <file>
             <source>${project.build.directory}/${project.build.finalName}.jar</source>
