@@ -17,6 +17,7 @@ public class ParameterNode {
     private Map<String, ParameterNode> children;
     private boolean multiInstance;
     private int nextInstanceNumber;
+    // Lowest-number-first recycling for deleted instance numbers (TreeSet.pollFirst)
     private TreeSet<Integer> availableInstanceNumbers = new TreeSet<>();
 
     public ParameterNode() {
@@ -106,11 +107,11 @@ public class ParameterNode {
         this.nextInstanceNumber = nextInstanceNumber;
     }
 
-    public void addAvailableInstanceNumber(int num) {
+    void addAvailableInstanceNumber(int num) {
         availableInstanceNumbers.add(num);
     }
 
-    public Integer pollAvailableInstanceNumber() {
+    Integer pollAvailableInstanceNumber() {
         return availableInstanceNumbers.pollFirst();
     }
 
