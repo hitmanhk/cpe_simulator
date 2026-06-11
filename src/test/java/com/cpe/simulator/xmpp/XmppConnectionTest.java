@@ -125,4 +125,136 @@ class XmppConnectionTest {
         XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
         assertSame(config, conn.getConfig());
     }
+
+    @Test
+    void testOnFailureCallbackFiredOnFailedState() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureDeviceIds = new ArrayList<>();
+        conn.onFailure(failureDeviceIds::add);
+
+        conn.setState(XmppConnection.ConnectionState.FAILED);
+
+        assertEquals(1, failureDeviceIds.size());
+        assertEquals("device001", failureDeviceIds.get(0));
+    }
+
+    @Test
+    void testOnFailureCallbackFiredOnDisconnectedState() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureDeviceIds = new ArrayList<>();
+        conn.onFailure(failureDeviceIds::add);
+
+        conn.setState(XmppConnection.ConnectionState.DISCONNECTED);
+
+        assertEquals(1, failureDeviceIds.size());
+        assertEquals("device001", failureDeviceIds.get(0));
+    }
+
+    @Test
+    void testOnSuccessCallbackFiredOnOnlineState() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> successDeviceIds = new ArrayList<>();
+        conn.onSuccess(successDeviceIds::add);
+
+        conn.setState(XmppConnection.ConnectionState.ONLINE);
+
+        assertEquals(1, successDeviceIds.size());
+        assertEquals("device001", successDeviceIds.get(0));
+    }
+
+    @Test
+    void testCallbacksNotFiredForOtherStates() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureIds = new ArrayList<>();
+        List<String> successIds = new ArrayList<>();
+        conn.onFailure(failureIds::add);
+        conn.onSuccess(successIds::add);
+
+        conn.setState(XmppConnection.ConnectionState.CONNECTING);
+        conn.setState(XmppConnection.ConnectionState.AUTHENTICATING);
+        conn.setState(XmppConnection.ConnectionState.AUTHENTICATED);
+        conn.setState(XmppConnection.ConnectionState.BINDING);
+        conn.setState(XmppConnection.ConnectionState.BOUND);
+
+        assertTrue(failureIds.isEmpty());
+        assertTrue(successIds.isEmpty());
+    }
+
+    @Test
+    void testCallbacksWorkWithoutRegistration() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+
+        assertDoesNotThrow(() -> {
+            conn.setState(XmppConnection.ConnectionState.FAILED);
+            conn.setState(XmppConnection.ConnectionState.ONLINE);
+            conn.setState(XmppConnection.ConnectionState.DISCONNECTED);
+        });
+    }
+
+    @Test
+    void testOnFailureNotFiredOnIntentionalDisconnect() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureIds = new ArrayList<>();
+        conn.onFailure(failureIds::add);
+
+        conn.disconnect();
+
+        assertTrue(failureIds.isEmpty());
+        assertEquals(XmppConnection.ConnectionState.DISCONNECTED, conn.getState());
+    }
+
+    @Test
+    void testReconnectAfterIntentionalDisconnectAndExplicitStateChange() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureIds = new ArrayList<>();
+        conn.onFailure(failureIds::add);
+
+        conn.disconnect();
+        assertTrue(failureIds.isEmpty());
+
+        conn.setState(XmppConnection.ConnectionState.FAILED);
+        assertEquals(1, failureIds.size());
+        assertEquals("device001", failureIds.get(0));
+    }
+
+    @Test
+    void testDisconnectRequestedClearedOnReconnect() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureIds = new ArrayList<>();
+        conn.onFailure(failureIds::add);
+
+        conn.disconnect();
+        assertTrue(failureIds.isEmpty());
+
+        // After disconnect, simulate a reconnect attempt
+        // connect() should clear disconnectRequested, so a subsequent
+        // failure should fire onFailure
+        conn.setState(XmppConnection.ConnectionState.CONNECTING);
+        conn.setState(XmppConnection.ConnectionState.FAILED);
+
+        assertEquals(1, failureIds.size());
+        assertEquals("device001", failureIds.get(0));
+    }
+
+    @Test
+    void testDisconnectRequestedClearedAfterOnlineCycle() {
+        XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
+        List<String> failureIds = new ArrayList<>();
+        List<String> successIds = new ArrayList<>();
+        conn.onFailure(failureIds::add);
+        conn.onSuccess(successIds::add);
+
+        conn.disconnect();
+        assertTrue(failureIds.isEmpty());
+
+        // Go through a full reconnect cycle
+        conn.setState(XmppConnection.ConnectionState.CONNECTING);
+        conn.setState(XmppConnection.ConnectionState.ONLINE);
+        assertEquals(1, successIds.size());
+
+        // Now an unplanned disconnect should fire onFailure
+        conn.setState(XmppConnection.ConnectionState.DISCONNECTED);
+        assertEquals(1, failureIds.size());
+        assertEquals("device001", failureIds.get(0));
+    }
 }

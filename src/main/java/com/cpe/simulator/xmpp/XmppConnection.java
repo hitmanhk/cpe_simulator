@@ -35,6 +35,9 @@ public class XmppConnection {
     private final Consumer<String> connectionRequestCallback;
     private final ConnReqAuthConfig connReqAuthConfig;
     private volatile Consumer<ConnectionState> onStateChangeCallback;
+    private volatile Consumer<String> onFailureCallback;
+    private volatile Consumer<String> onSuccessCallback;
+    private volatile boolean disconnectRequested;
     private volatile String xmppPassword;
 
     public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
@@ -52,6 +55,7 @@ public class XmppConnection {
 
     public CompletableFuture<Void> connect(EventLoopGroup eventLoopGroup) {
         CompletableFuture<Void> future = new CompletableFuture<>();
+        disconnectRequested = false;
         setState(ConnectionState.CONNECTING);
 
         StreamHandler streamHandler = new StreamHandler(this, config);
@@ -113,6 +117,7 @@ public class XmppConnection {
     }
 
     public void disconnect() {
+        disconnectRequested = true;
         if (channel != null && channel.isActive()) {
             sendStanza(new XmppStanza.PresenceStanza(null, "unavailable", null, null));
             sendStanza(new XmppStanza.StreamClose());
@@ -140,11 +145,25 @@ public class XmppConnection {
         if (onStateChangeCallback != null) {
             onStateChangeCallback.accept(state);
         }
+
+        if (state == ConnectionState.FAILED || (state == ConnectionState.DISCONNECTED && !disconnectRequested)) {
+            if (onFailureCallback != null) {
+                onFailureCallback.accept(deviceId);
+            }
+        } else if (state == ConnectionState.ONLINE) {
+            disconnectRequested = false;
+            if (onSuccessCallback != null) {
+                onSuccessCallback.accept(deviceId);
+            }
+        }
     }
 
     public void onStateChange(Consumer<ConnectionState> callback) {
         this.onStateChangeCallback = callback;
     }
+
+    public void onFailure(Consumer<String> callback) { this.onFailureCallback = callback; }
+    public void onSuccess(Consumer<String> callback) { this.onSuccessCallback = callback; }
 
     public String getJid() {
         return jid;
