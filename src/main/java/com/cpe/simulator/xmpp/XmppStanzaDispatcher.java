@@ -92,7 +92,10 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         log.warn("XMPP channel inactive for device {}", connection.getDeviceId());
-        connection.setState(XmppConnection.ConnectionState.DISCONNECTED);
+        // Don't overwrite FAILED state — channel close is already handled by setState(FAILED)
+        if (connection.getState() != XmppConnection.ConnectionState.FAILED) {
+            connection.setState(XmppConnection.ConnectionState.DISCONNECTED);
+        }
         super.channelInactive(ctx);
     }
 }

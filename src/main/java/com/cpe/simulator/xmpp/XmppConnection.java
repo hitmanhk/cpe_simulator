@@ -145,6 +145,11 @@ public class XmppConnection {
             return;
         }
         this.state = state;
+
+        if (state == ConnectionState.FAILED) {
+            closeChannel();
+        }
+
         if (onStateChangeCallback != null) {
             onStateChangeCallback.accept(state);
         }
@@ -158,6 +163,14 @@ public class XmppConnection {
             if (onSuccessCallback != null) {
                 onSuccessCallback.accept(deviceId);
             }
+        }
+    }
+
+    private void closeChannel() {
+        Channel ch = channel;
+        if (ch != null) {
+            channel = null;
+            ch.close();
         }
     }
 
