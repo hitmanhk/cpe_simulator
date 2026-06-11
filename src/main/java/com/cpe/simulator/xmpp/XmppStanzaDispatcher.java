@@ -12,6 +12,7 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
 
     private static final Logger log = LoggerFactory.getLogger(XmppStanzaDispatcher.class);
 
+    private final XmppConnection connection;
     private final StreamHandler streamHandler;
     private final SaslHandler saslHandler;
     private final IqHandler iqHandler;
@@ -19,12 +20,14 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
     private final BindHandler bindHandler;
     private final ExecutorService virtualThreadExecutor;
 
-    public XmppStanzaDispatcher(StreamHandler streamHandler,
+    public XmppStanzaDispatcher(XmppConnection connection,
+                                 StreamHandler streamHandler,
                                  SaslHandler saslHandler,
                                  IqHandler iqHandler,
                                  PresenceHandler presenceHandler,
                                  BindHandler bindHandler,
                                  ExecutorService virtualThreadExecutor) {
+        this.connection = connection;
         this.streamHandler = streamHandler;
         this.saslHandler = saslHandler;
         this.iqHandler = iqHandler;
@@ -81,7 +84,15 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("XMPP channel exception", cause);
+        log.error("XMPP channel exception for device {}", connection.getDeviceId(), cause);
+        connection.setState(XmppConnection.ConnectionState.FAILED);
         ctx.close();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.warn("XMPP channel inactive for device {}", connection.getDeviceId());
+        connection.setState(XmppConnection.ConnectionState.DISCONNECTED);
+        super.channelInactive(ctx);
     }
 }

@@ -71,7 +71,7 @@ public class XmppConnection {
         bindHandler.setPresenceHandler(presenceHandler);
 
         XmppStanzaDispatcher dispatcher = new XmppStanzaDispatcher(
-            streamHandler, saslHandler, iqHandler, presenceHandler, bindHandler,
+            this, streamHandler, saslHandler, iqHandler, presenceHandler, bindHandler,
             Executors.newVirtualThreadPerTaskExecutor());
 
         Bootstrap bootstrap = new Bootstrap();
