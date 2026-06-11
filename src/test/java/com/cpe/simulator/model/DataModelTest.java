@@ -183,6 +183,21 @@ class DataModelTest {
     }
 
     @Test
+    void testDeleteInstanceMakesNumberAvailableForReuse() {
+        ParameterNode wanDevice = model.getNode("Device.WANDevice");
+        assertNotNull(wanDevice);
+
+        model.addInstance("Device.WANDevice");
+        model.deleteInstance("Device.WANDevice.2");
+
+        ParameterNode instance1 = model.getNode("Device.WANDevice.1");
+        assertNotNull(instance1);
+
+        ParameterNode reused = model.addInstance("Device.WANDevice");
+        assertEquals("2", reused.getName());
+    }
+
+    @Test
     void testDeepCopyProducesIndependentCopy() {
         DataModel copy = model.deepCopy();
         assertNotNull(copy);

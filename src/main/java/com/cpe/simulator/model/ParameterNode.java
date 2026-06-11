@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 public class ParameterNode {
 
@@ -16,6 +17,7 @@ public class ParameterNode {
     private Map<String, ParameterNode> children;
     private boolean multiInstance;
     private int nextInstanceNumber;
+    private TreeSet<Integer> availableInstanceNumbers = new TreeSet<>();
 
     public ParameterNode() {
         this.children = new LinkedHashMap<>();
@@ -104,6 +106,14 @@ public class ParameterNode {
         this.nextInstanceNumber = nextInstanceNumber;
     }
 
+    public void addAvailableInstanceNumber(int num) {
+        availableInstanceNumbers.add(num);
+    }
+
+    public Integer pollAvailableInstanceNumber() {
+        return availableInstanceNumbers.pollFirst();
+    }
+
     public void addChild(ParameterNode child) {
         this.children.put(child.getName(), child);
     }
@@ -127,6 +137,7 @@ public class ParameterNode {
         copy.accessList = new ArrayList<>(this.accessList);
         copy.multiInstance = this.multiInstance;
         copy.nextInstanceNumber = this.nextInstanceNumber;
+        copy.availableInstanceNumbers = new TreeSet<>(this.availableInstanceNumbers);
         if (this.value != null) {
             copy.value = this.value.deepCopy();
         }

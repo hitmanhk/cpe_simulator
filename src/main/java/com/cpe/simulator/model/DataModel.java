@@ -118,8 +118,11 @@ public class DataModel {
         if (!parent.isMultiInstance()) {
             throw new IllegalArgumentException("Not a multi-instance object: " + parentPath);
         }
-        int instanceNum = parent.getNextInstanceNumber();
-        parent.setNextInstanceNumber(instanceNum + 1);
+        Integer recycled = parent.pollAvailableInstanceNumber();
+        int instanceNum = (recycled != null) ? recycled : parent.getNextInstanceNumber();
+        if (recycled == null) {
+            parent.setNextInstanceNumber(instanceNum + 1);
+        }
         String instanceName = String.valueOf(instanceNum);
         String instancePath = parent.getFullPath().isEmpty()
             ? instanceName
@@ -149,6 +152,12 @@ public class DataModel {
             throw new IllegalArgumentException("Instance not found: " + instancePath);
         }
         parent.removeChild(instanceName);
+        try {
+            int instanceNum = Integer.parseInt(instanceName);
+            parent.addAvailableInstanceNumber(instanceNum);
+        } catch (NumberFormatException ignored) {
+            // non-numeric instance name, nothing to recycle
+        }
     }
 
     public String getRootName() {
