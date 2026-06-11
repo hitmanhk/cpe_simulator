@@ -342,4 +342,69 @@ class DataModelTest {
         assertThrows(IllegalArgumentException.class, () ->
             model.setRelativeValue("ManagementServer.NonExistent", "value"));
     }
+
+    @Test
+    void testClonedInstanceIsIndependent() {
+        ParameterNode newInstance = model.addInstance("Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection");
+        assertNotNull(newInstance);
+
+        model.setValue("Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.2.Name", "ModifiedWAN");
+        assertEquals("ModifiedWAN", model.getValue("Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.2.Name").getValue());
+        assertEquals("WAN", model.getValue("Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Name").getValue());
+    }
+
+    @Test
+    void testMultiLevelAddObject() {
+        ParameterNode wanDevice2 = model.addInstance("Device.WANDevice");
+        assertNotNull(wanDevice2);
+        assertEquals("2", wanDevice2.getName());
+
+        ParameterNode wanConn = model.getNode("Device.WANDevice.2.WANConnectionDevice");
+        assertNotNull(wanConn);
+        assertTrue(wanConn.isMultiInstance());
+
+        ParameterNode wanIp = model.getNode("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection");
+        assertNotNull(wanIp);
+        assertTrue(wanIp.isMultiInstance());
+
+        ParameterNode nameParam = model.getNode("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection.1.Name");
+        assertNotNull(nameParam);
+        assertEquals("WAN", nameParam.getValue().getValue());
+
+        ParameterNode innerNew = model.addInstance("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection");
+        assertNotNull(innerNew);
+        assertEquals("2", innerNew.getName());
+
+        ParameterNode innerName = model.getNode("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection.2.Name");
+        assertNotNull(innerName);
+        assertEquals("WAN", innerName.getValue().getValue());
+    }
+
+    @Test
+    void testClonedInstancePathsAreCorrect() {
+        model.addInstance("Device.WANDevice");
+
+        ParameterNode wanConn = model.getNode("Device.WANDevice.2.WANConnectionDevice");
+        assertNotNull(wanConn);
+        assertEquals("Device.WANDevice.2.WANConnectionDevice", wanConn.getFullPath());
+
+        ParameterNode wanIp = model.getNode("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection");
+        assertNotNull(wanIp);
+        assertEquals("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection", wanIp.getFullPath());
+
+        ParameterNode nameParam = model.getNode("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection.1.Name");
+        assertNotNull(nameParam);
+        assertEquals("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection.1.Name", nameParam.getFullPath());
+    }
+
+    @Test
+    void testAddInstanceWithoutTemplateCreatesEmptyNode() {
+        ParameterNode wanDevice = model.getNode("Device.WANDevice");
+        wanDevice.removeChild("1");
+
+        ParameterNode newInstance = model.addInstance("Device.WANDevice");
+        assertNotNull(newInstance);
+        assertEquals("2", newInstance.getName());
+        assertTrue(newInstance.getChildren().isEmpty());
+    }
 }
