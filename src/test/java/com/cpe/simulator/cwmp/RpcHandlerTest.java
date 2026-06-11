@@ -245,6 +245,65 @@ class RpcHandlerTest {
         assertTrue(response.getStringList().contains("Download"));
     }
 
+    @Test
+    void addObjectClonesInstance1AndGetParameterValuesReturnsClonedData() {
+        DataModel fullModel = new DataModel();
+        ParameterNode deviceNode = new ParameterNode("Device", "Device");
+
+        ParameterNode wanNode = new ParameterNode("WANDevice", "Device.WANDevice");
+        wanNode.setMultiInstance(true);
+        wanNode.setNextInstanceNumber(2);
+
+        ParameterNode wan1 = new ParameterNode("1", "Device.WANDevice.1");
+        ParameterNode wanConn = new ParameterNode("WANConnectionDevice", "Device.WANDevice.1.WANConnectionDevice");
+        wanConn.setMultiInstance(true);
+        wanConn.setNextInstanceNumber(2);
+
+        ParameterNode wanConn1 = new ParameterNode("1", "Device.WANDevice.1.WANConnectionDevice.1");
+        ParameterNode wanIp = new ParameterNode("WANIPConnection", "Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection");
+        wanIp.setMultiInstance(true);
+        wanIp.setNextInstanceNumber(2);
+
+        ParameterNode wanIp1 = new ParameterNode("1", "Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1");
+        ParameterNode nameParam = new ParameterNode("Name", "Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Name");
+        nameParam.setValue(new ParameterValue("WAN", "xsd:string"));
+        nameParam.setWritable(true);
+        wanIp1.addChild(nameParam);
+        wanIp.addChild(wanIp1);
+
+        wanConn1.addChild(wanIp);
+        wanConn.addChild(wanConn1);
+        wan1.addChild(wanConn);
+        wanNode.addChild(wan1);
+        deviceNode.addChild(wanNode);
+        fullModel.getRoot().addChild(deviceNode);
+
+        when(device.getDataModel()).thenReturn(fullModel);
+
+        AddObjectHandler addHandler = new AddObjectHandler();
+        SoapEnvelope addRequest = new SoapEnvelope();
+        addRequest.setCwmpId("SIM-10");
+        addRequest.setMethodName("AddObject");
+        addRequest.setRawBody(buildAddObjectXml("Device.WANDevice."));
+
+        SoapEnvelope addResponse = addHandler.handle(device, addRequest);
+        assertFalse(addResponse.isFault());
+        assertEquals("2", addResponse.getParameters().get("InstanceNumber"));
+
+        GetParameterValuesHandler getHandler = new GetParameterValuesHandler();
+        SoapEnvelope getRequest = new SoapEnvelope();
+        getRequest.setCwmpId("SIM-11");
+        getRequest.setMethodName("GetParameterValues");
+        getRequest.setRawBody(buildGetParameterValuesXml("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection.1.Name"));
+
+        SoapEnvelope getResponse = getHandler.handle(device, getRequest);
+        assertFalse(getResponse.isFault());
+        List<SoapEnvelope.ParameterInfo> params = getResponse.getParameterList();
+        assertEquals(1, params.size());
+        assertEquals("Device.WANDevice.2.WANConnectionDevice.1.WANIPConnection.1.Name", params.get(0).name());
+        assertEquals("WAN", params.get(0).value());
+    }
+
     private String buildGetParameterValuesXml(String... params) {
         StringBuilder sb = new StringBuilder();
         sb.append("<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\"");
