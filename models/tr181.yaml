@@ -1,4 +1,5 @@
 parameters:
+  # ===================== DeviceInfo =====================
   - path: Device.DeviceInfo.Manufacturer
     type: xsd:string
     value: "SimVendor"
@@ -59,6 +60,8 @@ parameters:
     value: ""
     writable: false
     notification: 0
+
+  # ===================== ManagementServer =====================
   - path: Device.ManagementServer.URL
     type: xsd:string
     value: "${acs.url}"
@@ -109,6 +112,60 @@ parameters:
     value: "false"
     writable: false
     notification: 0
+
+  # ===================== PON (GPON Interface) =====================
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.LinkStatus
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.RxPower
+    type: xsd:string
+    value: "-18.5"
+    writable: false
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.TxPower
+    type: xsd:string
+    value: "2.5"
+    writable: false
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.LOID
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.Password
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.VLANID
+    type: xsd:unsignedInt
+    value: "100"
+    writable: true
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.GemPortID
+    type: xsd:unsignedInt
+    value: "128"
+    writable: false
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.TContID
+    type: xsd:unsignedInt
+    value: "1"
+    writable: false
+    notification: 0
+  - path: Device.WANDevice.1.X_GponInterfaceConfig.Temperature
+    type: xsd:string
+    value: "38.5"
+    writable: false
+    notification: 0
+
+  # ===================== WAN =====================
   - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Name
     type: xsd:string
     value: "WAN"
@@ -118,6 +175,24 @@ parameters:
   - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.Enable
     type: xsd:boolean
     value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionStatus
+    type: xsd:string
+    value: "Connected"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionType
+    type: xsd:string
+    value: "IP_Routed"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.AddressingType
+    type: xsd:string
+    value: "DHCP"
     writable: true
     notification: 0
     multiInstance: true
@@ -141,7 +216,7 @@ parameters:
     multiInstance: true
   - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.DNSServers
     type: xsd:string
-    value: "8.8.8.8"
+    value: "8.8.8.8,8.8.4.4"
     writable: false
     notification: 0
     multiInstance: true
@@ -151,18 +226,541 @@ parameters:
     writable: false
     notification: 0
     multiInstance: true
-  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ConnectionType
-    type: xsd:string
-    value: "IP_Routed"
-    writable: false
-    notification: 0
-    multiInstance: true
   - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.ExternalIPAddress
     type: xsd:string
     value: "${random.ip}"
     writable: false
     notification: 0
     multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.NATEnabled
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_CT-COM_LanInterface
+    type: xsd:string
+    value: "lan1"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_CT-COM_ServiceList
+    type: xsd:string
+    value: "INTERNET"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_CT-COM_VLANID
+    type: xsd:unsignedInt
+    value: "100"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.1.X_CT-COM_8021pMark
+    type: xsd:unsignedInt
+    value: "0"
+    writable: true
+    notification: 0
+    multiInstance: true
+
+  # ===================== WIFI - SSID =====================
+  - path: Device.WiFi.SSID.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.1.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.WiFi.SSID.1.SSID
+    type: xsd:string
+    value: "SimWiFi-2.4G"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.1.Name
+    type: xsd:string
+    value: "SimWiFi-2.4G"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.1.BSSID
+    type: xsd:string
+    value: "00:00:00:00:00:10"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.1.LowerLayers
+    type: xsd:string
+    value: "Device.WiFi.Radio.1."
+    writable: true
+    notification: 0
+    multiInstance: true
+  # WiFi 5G SSID
+  - path: Device.WiFi.SSID.2.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.2.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.WiFi.SSID.2.SSID
+    type: xsd:string
+    value: "SimWiFi-5G"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.2.Name
+    type: xsd:string
+    value: "SimWiFi-5G"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.2.BSSID
+    type: xsd:string
+    value: "00:00:00:00:00:20"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.SSID.2.LowerLayers
+    type: xsd:string
+    value: "Device.WiFi.Radio.2."
+    writable: true
+    notification: 0
+    multiInstance: true
+
+  # ===================== WIFI - Radio =====================
+  - path: Device.WiFi.Radio.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.1.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.WiFi.Radio.1.Channel
+    type: xsd:unsignedInt
+    value: "6"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.1.Standard
+    type: xsd:string
+    value: "802.11b/g/n"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.1.OperatingChannelBandwidth
+    type: xsd:string
+    value: "20/40MHz"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.1.TransmitPower
+    type: xsd:unsignedInt
+    value: "100"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.1.AutoChannelEnable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  # WiFi 5G Radio
+  - path: Device.WiFi.Radio.2.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.2.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.WiFi.Radio.2.Channel
+    type: xsd:unsignedInt
+    value: "36"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.2.Standard
+    type: xsd:string
+    value: "802.11a/n/ac/ax"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.2.OperatingChannelBandwidth
+    type: xsd:string
+    value: "20/40/80MHz"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.2.TransmitPower
+    type: xsd:unsignedInt
+    value: "100"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.Radio.2.AutoChannelEnable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+
+  # ===================== WIFI - AccessPoint & Security =====================
+  - path: Device.WiFi.AccessPoint.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.1.SSIDReference
+    type: xsd:string
+    value: "Device.WiFi.SSID.1."
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.1.Security.ModeEnabled
+    type: xsd:string
+    value: "WPA2-Personal"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.1.Security.WPAEncryptionMode
+    type: xsd:string
+    value: "AES"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.1.Security.KeyPassphrase
+    type: xsd:string
+    value: "12345678"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.1.AssociatedDeviceNumberOfEntries
+    type: xsd:unsignedInt
+    value: "0"
+    writable: false
+    notification: 0
+    multiInstance: true
+  # WiFi 5G AccessPoint
+  - path: Device.WiFi.AccessPoint.2.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.2.SSIDReference
+    type: xsd:string
+    value: "Device.WiFi.SSID.2."
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.2.Security.ModeEnabled
+    type: xsd:string
+    value: "WPA2-Personal"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.2.Security.WPAEncryptionMode
+    type: xsd:string
+    value: "AES"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.2.Security.KeyPassphrase
+    type: xsd:string
+    value: "12345678"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.WiFi.AccessPoint.2.AssociatedDeviceNumberOfEntries
+    type: xsd:unsignedInt
+    value: "0"
+    writable: false
+    notification: 0
+    multiInstance: true
+
+  # ===================== LAN =====================
+  - path: Device.LAN.Device.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+  - path: Device.LAN.Device.1.IPInterface.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.IPInterface.1.IPAddress
+    type: xsd:string
+    value: "192.168.1.1"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.IPInterface.1.SubnetMask
+    type: xsd:string
+    value: "255.255.255.0"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.IPInterface.1.AddressingType
+    type: xsd:string
+    value: "Static"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServerEnable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.MinAddress
+    type: xsd:string
+    value: "192.168.1.2"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.MaxAddress
+    type: xsd:string
+    value: "192.168.1.254"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.SubnetMask
+    type: xsd:string
+    value: "255.255.255.0"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.DHCPLeaseTime
+    type: xsd:unsignedInt
+    value: "86400"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.DomainName
+    type: xsd:string
+    value: "home"
+    writable: true
+    notification: 0
+  - path: Device.LAN.Device.1.DHCPServer.Pool.1.DNSServers
+    type: xsd:string
+    value: "192.168.1.1"
+    writable: true
+    notification: 0
+
+  # ===================== LAN - Ethernet =====================
+  - path: Device.Ethernet.Interface.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.1.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.Ethernet.Interface.1.Name
+    type: xsd:string
+    value: "LAN1"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.1.MACAddress
+    type: xsd:string
+    value: "00:00:00:00:00:01"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.2.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.2.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.Ethernet.Interface.2.Name
+    type: xsd:string
+    value: "LAN2"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.2.MACAddress
+    type: xsd:string
+    value: "00:00:00:00:00:02"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.3.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.3.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.Ethernet.Interface.3.Name
+    type: xsd:string
+    value: "LAN3"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.3.MACAddress
+    type: xsd:string
+    value: "00:00:00:00:00:03"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.4.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.4.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.Ethernet.Interface.4.Name
+    type: xsd:string
+    value: "LAN4"
+    writable: false
+    notification: 0
+    multiInstance: true
+  - path: Device.Ethernet.Interface.4.MACAddress
+    type: xsd:string
+    value: "00:00:00:00:00:04"
+    writable: false
+    notification: 0
+    multiInstance: true
+
+  # ===================== VOIP =====================
+  - path: Device.VoiceService.1.Enable
+    type: xsd:boolean
+    value: "true"
+    writable: true
+    notification: 0
+  - path: Device.VoiceService.1.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+  - path: Device.VoiceService.1.VoiceProfile.1.Enable
+    type: xsd:string
+    value: "Enabled"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.SIP.ProxyServer
+    type: xsd:string
+    value: "sip.example.com"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.SIP.ProxyServerPort
+    type: xsd:unsignedInt
+    value: "5060"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.SIP.RegistrarServer
+    type: xsd:string
+    value: "sip.example.com"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.SIP.RegistrarServerPort
+    type: xsd:unsignedInt
+    value: "5060"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.SIP.UserAgentDomain
+    type: xsd:string
+    value: "example.com"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.SIP.URI
+    type: xsd:string
+    value: "sip:user@example.com"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.Line.1.Enable
+    type: xsd:string
+    value: "Enabled"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.Line.1.Status
+    type: xsd:string
+    value: "Up"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.Line.1.SIP.URI
+    type: xsd:string
+    value: "sip:line1@example.com"
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.Line.1.CallState
+    type: xsd:string
+    value: "Idle"
+    writable: false
+    notification: 2
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.Line.1.X_CT-COM_Phonenum
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+    multiInstance: true
+  - path: Device.VoiceService.1.VoiceProfile.1.Line.1.X_CT-COM_Password
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+    multiInstance: true
+
+  # ===================== XMPP =====================
   - path: Device.XMPP.Connection.1.Password
     type: xsd:string
     value: ""
