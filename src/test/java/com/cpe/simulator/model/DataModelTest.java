@@ -326,6 +326,18 @@ class DataModelTest {
     }
 
     @Test
+    void testAddInstanceClonesInstance1Children() {
+        ParameterNode newInstance = model.addInstance("Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection");
+        assertNotNull(newInstance);
+        assertEquals("2", newInstance.getName());
+
+        ParameterNode nameParam = model.getNode("Device.WANDevice.1.WANConnectionDevice.1.WANIPConnection.2.Name");
+        assertNotNull(nameParam);
+        assertEquals("WAN", nameParam.getValue().getValue());
+        assertTrue(nameParam.isWritable());
+    }
+
+    @Test
     void testSetRelativeValueNonExistent() {
         assertThrows(IllegalArgumentException.class, () ->
             model.setRelativeValue("ManagementServer.NonExistent", "value"));

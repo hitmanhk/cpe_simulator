@@ -118,17 +118,32 @@ public class DataModel {
         if (!parent.isMultiInstance()) {
             throw new IllegalArgumentException("Not a multi-instance object: " + parentPath);
         }
+
         Integer recycled = parent.pollAvailableInstanceNumber();
         int instanceNum = (recycled != null) ? recycled : parent.getNextInstanceNumber();
         if (recycled == null) {
             parent.setNextInstanceNumber(instanceNum + 1);
         }
+
         String instanceName = String.valueOf(instanceNum);
         String instancePath = parent.getFullPath().isEmpty()
             ? instanceName
             : parent.getFullPath() + "." + instanceName;
+
         ParameterNode instanceNode = new ParameterNode(instanceName, instancePath);
         instanceNode.setMultiInstance(false);
+
+        ParameterNode template = parent.getChild("1");
+        if (template != null) {
+            ParameterNode clonedTemplate = template.deepCopy();
+            String oldPrefix = template.getFullPath();
+            String newPrefix = instanceNode.getFullPath();
+            for (ParameterNode child : clonedTemplate.getChildren().values()) {
+                rewriteInstancePaths(child, oldPrefix, newPrefix);
+                instanceNode.addChild(child);
+            }
+        }
+
         parent.addChild(instanceNode);
         return instanceNode;
     }
@@ -157,6 +172,16 @@ public class DataModel {
             parent.addAvailableInstanceNumber(instanceNum);
         } catch (NumberFormatException ignored) {
             // non-numeric instance name, nothing to recycle
+        }
+    }
+
+    private void rewriteInstancePaths(ParameterNode node, String oldPrefix, String newPrefix) {
+        String path = node.getFullPath();
+        if (path.startsWith(oldPrefix)) {
+            node.setFullPath(newPrefix + path.substring(oldPrefix.length()));
+        }
+        for (ParameterNode child : node.getChildren().values()) {
+            rewriteInstancePaths(child, oldPrefix, newPrefix);
         }
     }
 
