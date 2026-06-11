@@ -75,6 +75,8 @@ public class XmppConnection {
 }
 ```
 
+**Important: `disconnectRequested` guard** — `XmppConnection.disconnect()` sets `DISCONNECTED` state, which would normally trigger `onFailure` and cause an unwanted reconnect. A `disconnectRequested` boolean flag prevents this: `disconnect()` sets it to `true` before calling `setState()`, and `setState()` skips the `onFailure` callback when the flag is set. The flag is cleared when `connect()` is called (start of a reconnect cycle) and when the connection returns to `ONLINE` state.
+
 **No change to `CpeDevice`** — it continues using `onStateChange()` for business-level state tracking independently.
 
 ### 2. XmppStanzaDispatcher — Fill Missing Failure Triggers
