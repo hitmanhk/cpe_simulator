@@ -68,7 +68,6 @@ public class ReconnectScheduler {
     }
 
     public void shutdown() {
-        scheduler.shutdownNow();
         pendingDevices.clear();
     }
 

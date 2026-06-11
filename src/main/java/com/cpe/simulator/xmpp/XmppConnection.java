@@ -141,6 +141,9 @@ public class XmppConnection {
     }
 
     public void setState(ConnectionState state) {
+        if (this.state == state) {
+            return;
+        }
         this.state = state;
         if (onStateChangeCallback != null) {
             onStateChangeCallback.accept(state);

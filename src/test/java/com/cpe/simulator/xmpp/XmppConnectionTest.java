@@ -73,13 +73,29 @@ class XmppConnectionTest {
     @Test
     void testStateChangeCallbackReceivesAllStates() {
         XmppConnection conn = new XmppConnection("device001", config, null, null, new ConnReqAuthConfig(false, null, null));
-        AtomicReference<XmppConnection.ConnectionState> lastState = new AtomicReference<>();
-        conn.onStateChange(lastState::set);
+        List<XmppConnection.ConnectionState> stateChanges = new ArrayList<>();
+        conn.onStateChange(stateChanges::add);
 
-        for (XmppConnection.ConnectionState state : XmppConnection.ConnectionState.values()) {
+        // Set states in sequence, skipping DISCONNECTED since it's the initial state
+        // (setState is idempotent: same-state transitions are ignored)
+        XmppConnection.ConnectionState[] states = {
+            XmppConnection.ConnectionState.CONNECTING,
+            XmppConnection.ConnectionState.AUTHENTICATING,
+            XmppConnection.ConnectionState.AUTHENTICATED,
+            XmppConnection.ConnectionState.BINDING,
+            XmppConnection.ConnectionState.BOUND,
+            XmppConnection.ConnectionState.ONLINE,
+            XmppConnection.ConnectionState.FAILED,
+            XmppConnection.ConnectionState.DISCONNECTED
+        };
+
+        for (XmppConnection.ConnectionState state : states) {
             conn.setState(state);
-            assertEquals(state, lastState.get());
             assertEquals(state, conn.getState());
+        }
+        assertEquals(states.length, stateChanges.size());
+        for (int i = 0; i < states.length; i++) {
+            assertEquals(states[i], stateChanges.get(i));
         }
     }
 
@@ -117,7 +133,9 @@ class XmppConnectionTest {
 
         assertDoesNotThrow(conn::disconnect);
         assertEquals(XmppConnection.ConnectionState.DISCONNECTED, conn.getState());
-        assertTrue(stateChanges.contains(XmppConnection.ConnectionState.DISCONNECTED));
+        // disconnect() on an already-DISCONNECTED connection is idempotent,
+        // so no state change callback is fired
+        assertTrue(stateChanges.isEmpty());
     }
 
     @Test
@@ -144,6 +162,8 @@ class XmppConnectionTest {
         List<String> failureDeviceIds = new ArrayList<>();
         conn.onFailure(failureDeviceIds::add);
 
+        // Transition from a non-DISCONNECTED state so the idempotent guard doesn't skip it
+        conn.setState(XmppConnection.ConnectionState.CONNECTING);
         conn.setState(XmppConnection.ConnectionState.DISCONNECTED);
 
         assertEquals(1, failureDeviceIds.size());
