@@ -89,7 +89,7 @@ class CliCommandTest {
         assertEquals(200, cmd.connectBatchDelay);
         assertEquals("0.0.0.0", cmd.connReqHost);
         assertEquals(7547, cmd.connReqPort);
-        assertEquals(5222, cmd.xmppPort);
+        assertNull(cmd.xmppPort);
         assertEquals("cpe", cmd.xmppUserPrefix);
         assertEquals("sim", cmd.xmppResource);
         assertNull(cmd.xmppTlsMode);

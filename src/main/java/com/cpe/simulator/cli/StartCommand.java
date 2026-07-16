@@ -81,8 +81,8 @@ public class StartCommand implements Runnable {
     @Option(names = {"--xmpp-host"}, description = "XMPP server host")
     String xmppHost;
 
-    @Option(names = {"--xmpp-port"}, description = "XMPP server port", defaultValue = "5222")
-    int xmppPort;
+    @Option(names = {"--xmpp-port"}, description = "XMPP server port (default: 5223 for DIRECT TLS, otherwise 5222)")
+    Integer xmppPort;
 
     @Option(names = {"--xmpp-domain"}, description = "XMPP domain")
     String xmppDomain;
@@ -251,7 +251,7 @@ public class StartCommand implements Runnable {
 
         AppConfig.XmppConfig xmpp = config.getXmpp();
         if (xmppHost != null) xmpp.setHost(xmppHost);
-        xmpp.setPort(xmppPort);
+        if (xmppPort != null) xmpp.setPort(xmppPort);
         if (xmppDomain != null) xmpp.setDomain(xmppDomain);
         if (xmppPassword != null) xmpp.setPassword(xmppPassword);
         xmpp.setUserPrefix(xmppUserPrefix);

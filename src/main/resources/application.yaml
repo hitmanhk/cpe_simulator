@@ -28,7 +28,6 @@ simulator:
 
 xmpp:
   host: localhost
-  port: 5222
   domain: iot.example.com
   user-prefix: cpe
   password: secret

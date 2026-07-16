@@ -31,7 +31,27 @@ class XmppTlsConfigTest {
     void defaultsToNoTls() {
         AppConfig.XmppConfig config = new AppConfig.XmppConfig();
         assertEquals(AppConfig.XmppConfig.TlsMode.NONE, config.getTlsMode());
+        assertEquals(5222, config.getPort());
         assertEquals("SCRAM-SHA-1", config.getSaslMechanism());
+    }
+
+    @Test
+    void defaultsDirectTlsToPort5223() {
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+
+        config.setTlsMode(AppConfig.XmppConfig.TlsMode.DIRECT);
+
+        assertEquals(5223, config.getPort());
+    }
+
+    @Test
+    void keepsExplicitPortForDirectTls() {
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+        config.setTlsMode(AppConfig.XmppConfig.TlsMode.DIRECT);
+
+        config.setPort(15223);
+
+        assertEquals(15223, config.getPort());
     }
 
     @Test

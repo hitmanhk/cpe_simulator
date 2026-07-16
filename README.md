@@ -107,7 +107,7 @@ cpe-sim start [选项]
 | `--conn-req-user <user>` | 回连认证用户名 | - |
 | `--conn-req-password <pass>` | 回连认证密码 | - |
 | `--xmpp-host <host>` | XMPP 服务器地址 | - |
-| `--xmpp-port <port>` | XMPP 服务器端口 | `5222` |
+| `--xmpp-port <port>` | XMPP 服务器端口 | DIRECT TLS 为 `5223`，其他模式为 `5222` |
 | `--xmpp-domain <domain>` | XMPP 域名 | - |
 | `--xmpp-password <pass>` | XMPP 密码 | - |
 | `--xmpp-user-prefix <prefix>` | XMPP 用户名前缀 | `cpe` |
@@ -199,7 +199,6 @@ simulator:
 
 xmpp:
   host: localhost                 # XMPP 服务器地址
-  port: 5222                      # XMPP 服务器端口
   domain: iot.example.com         # XMPP 域名
   user-prefix: cpe                # 用户名前缀
   password: secret                # 密码
@@ -213,6 +212,8 @@ logging:
   level: INFO                     # 日志级别：DEBUG、INFO、WARN、ERROR
   device-filter: ""               # 设备过滤（仅输出匹配设备的日志）
 ```
+
+XMPP 端口未显式配置时，`DIRECT` TLS 默认使用 `5223`，`NONE` 和 `STARTTLS` 默认使用 `5222`。可通过 `--xmpp-port` 或 YAML 中的 `xmpp.port` 覆盖默认值。
 
 ### 自定义数据模型
 

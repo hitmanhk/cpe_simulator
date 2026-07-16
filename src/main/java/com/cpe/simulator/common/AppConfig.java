@@ -186,7 +186,7 @@ public class AppConfig {
         @JsonProperty("host")
         private String host = "localhost";
         @JsonProperty("port")
-        private int port = 5222;
+        private Integer port;
         @JsonProperty("domain")
         private String domain = "iot.example.com";
         @JsonProperty("user-prefix")
@@ -209,7 +209,7 @@ public class AppConfig {
 
         public String getHost() { return host; }
         public void setHost(String host) { this.host = host; }
-        public int getPort() { return port; }
+        public int getPort() { return port != null ? port : (isDirectTls() ? 5223 : 5222); }
         public void setPort(int port) { this.port = port; }
         public String getDomain() { return domain; }
         public void setDomain(String domain) { this.domain = domain; }
