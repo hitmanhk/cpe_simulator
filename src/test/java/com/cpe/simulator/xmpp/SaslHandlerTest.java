@@ -31,6 +31,7 @@ class SaslHandlerTest {
         when(connection.getDeviceId()).thenReturn("001");
 
         List<SaslMechanism> mechanisms = List.of(
+            new ScramSha256Mechanism(),
             new ScramSha1Mechanism(),
             new PlainMechanism()
         );
@@ -55,6 +56,20 @@ class SaslHandlerTest {
         assertEquals("PLAIN", authStanza.mechanism());
         assertNotNull(authStanza.payload());
         assertEquals(saslHandler.getSelectedMechanism().getMechanismName(), "PLAIN");
+    }
+
+    @Test
+    void testScramSha256Selection() {
+        config.setSaslMechanism("SCRAM-SHA-256");
+        XmppStanza.StreamFeatures features = new XmppStanza.StreamFeatures(
+            "<stream:features/>", List.of("PLAIN", "SCRAM-SHA-256"), false, false, false);
+
+        saslHandler.startAuth(features);
+
+        ArgumentCaptor<XmppStanza> captor = ArgumentCaptor.forClass(XmppStanza.class);
+        verify(connection).sendStanza(captor.capture());
+        XmppStanza.AuthStanza auth = (XmppStanza.AuthStanza) captor.getValue();
+        assertEquals("SCRAM-SHA-256", auth.mechanism());
     }
 
     @Test

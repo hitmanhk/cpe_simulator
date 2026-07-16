@@ -66,6 +66,12 @@ public class SaslHandler {
 
     public void handleAuthResult(XmppStanza stanza) {
         if (stanza instanceof XmppStanza.AuthSuccess) {
+            XmppStanza.AuthSuccess success = (XmppStanza.AuthSuccess) stanza;
+            if (selectedMechanism != null && !selectedMechanism.verifyServerFinal(success.payload())) {
+                log.error("SASL server signature verification failed for device {}", connection.getDeviceId());
+                connection.setState(XmppConnection.ConnectionState.FAILED);
+                return;
+            }
             log.debug("SASL auth succeeded for device {}", connection.getDeviceId());
             connection.setState(XmppConnection.ConnectionState.AUTHENTICATED);
             resetDecoder();

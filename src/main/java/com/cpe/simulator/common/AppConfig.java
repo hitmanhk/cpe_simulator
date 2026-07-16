@@ -2,6 +2,7 @@ package com.cpe.simulator.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AppConfig {
@@ -170,6 +171,18 @@ public class AppConfig {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class XmppConfig {
+        public enum TlsMode {
+            NONE, DIRECT, STARTTLS;
+
+            @JsonCreator
+            public static TlsMode fromValue(String value) {
+                if (value == null || value.isBlank()) {
+                    return NONE;
+                }
+                return valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
+            }
+        }
+
         @JsonProperty("host")
         private String host = "localhost";
         @JsonProperty("port")
@@ -182,10 +195,13 @@ public class AppConfig {
         private String password = "secret";
         @JsonProperty("resource")
         private String resource = "sim";
+        @JsonProperty("tls-mode")
+        private TlsMode tlsMode;
+        /** Legacy configuration: {@code tls: true} means direct TLS. */
         @JsonProperty("tls")
-        private boolean tls = false;
+        private Boolean tls;
         @JsonProperty("sasl-mechanism")
-        private String saslMechanism = "PLAIN";
+        private String saslMechanism = "SCRAM-SHA-1";
         @JsonProperty("keepalive-interval")
         private int keepaliveInterval = 60;
         @JsonProperty("keepalive-timeout")
@@ -203,8 +219,22 @@ public class AppConfig {
         public void setPassword(String password) { this.password = password; }
         public String getResource() { return resource; }
         public void setResource(String resource) { this.resource = resource; }
-        public boolean isTls() { return tls; }
-        public void setTls(boolean tls) { this.tls = tls; }
+        public TlsMode getTlsMode() {
+            return tlsMode != null ? tlsMode : (Boolean.TRUE.equals(tls) ? TlsMode.DIRECT : TlsMode.NONE);
+        }
+        public void setTlsMode(TlsMode tlsMode) { this.tlsMode = tlsMode; }
+        public void setTlsMode(String tlsMode) { this.tlsMode = TlsMode.fromValue(tlsMode); }
+        public boolean isDirectTls() { return getTlsMode() == TlsMode.DIRECT; }
+        public boolean isStartTls() { return getTlsMode() == TlsMode.STARTTLS; }
+        /** @deprecated use {@link #getTlsMode()} */
+        @Deprecated
+        public boolean isTls() { return isDirectTls(); }
+        /** @deprecated use {@link #setTlsMode(TlsMode)} */
+        @Deprecated
+        public void setTls(boolean tls) {
+            this.tls = tls;
+            this.tlsMode = tls ? TlsMode.DIRECT : TlsMode.NONE;
+        }
         public String getSaslMechanism() { return saslMechanism; }
         public void setSaslMechanism(String saslMechanism) { this.saslMechanism = saslMechanism; }
         public int getKeepaliveInterval() { return keepaliveInterval; }

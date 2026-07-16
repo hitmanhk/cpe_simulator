@@ -112,7 +112,8 @@ cpe-sim start [选项]
 | `--xmpp-password <pass>` | XMPP 密码 | - |
 | `--xmpp-user-prefix <prefix>` | XMPP 用户名前缀 | `cpe` |
 | `--xmpp-resource <res>` | XMPP 资源名 | `sim` |
-| `--xmpp-tls` | 启用 XMPP TLS 加密 | `false` |
+| `--xmpp-tls-mode <NONE\|DIRECT\|STARTTLS>` | XMPP TLS 建立模式 | `NONE` |
+| `--xmpp-sasl-mechanism <name>` | SASL 认证机制 | `SCRAM-SHA-1` |
 | `--xmpp-only` | 仅 XMPP 模式（跳过 CwmpServer 和定时 Inform） | `false` |
 | `--no-periodic` | 禁用定时 Inform 上报 | `false` |
 | `--reboot-delay <seconds>` | 模拟重启延迟 | `5` |
@@ -203,8 +204,8 @@ xmpp:
   user-prefix: cpe                # 用户名前缀
   password: secret                # 密码
   resource: sim                   # 资源名
-  tls: false                      # 是否启用 TLS
-  sasl-mechanism: PLAIN           # SASL 认证机制：PLAIN 或 SCRAM-SHA-1
+  tls-mode: NONE                  # TLS 模式：NONE、DIRECT 或 STARTTLS
+  sasl-mechanism: SCRAM-SHA-1     # SASL 认证机制：PLAIN、SCRAM-SHA-1 或 SCRAM-SHA-256
   keepalive-interval: 60          # Ping 间隔（秒）
   keepalive-timeout: 30           # Ping 超时（秒）
 
@@ -282,7 +283,7 @@ parameters:
 | 层 | 技术 | 说明 |
 |----|------|------|
 | CWMP | StringBuilder + Jackson XML | SOAP 消息构建/解析、会话管理、RPC 处理 |
-| XMPP | Netty + Aalto XML | 轻量 XMPP 客户端（Stream、SASL PLAIN/SCRAM-SHA-1、Bind、Presence、IQ、Ping、指数退避重连） |
+| XMPP | Netty + Aalto XML | 轻量 XMPP 客户端（直接 TLS/STARTTLS、SASL PLAIN/SCRAM-SHA-1/SCRAM-SHA-256、Bind、Presence、IQ、Ping、指数退避重连） |
 | HTTP | JDK HttpClient + Netty | 虚拟线程 HTTP 客户端、Netty HTTP 服务器 |
 
 ## 测试

@@ -54,6 +54,8 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
                 case XmppStanza.AuthSuccess success -> saslHandler.handleAuthResult(success);
                 case XmppStanza.AuthFailure failure -> saslHandler.handleAuthResult(failure);
                 case XmppStanza.AuthChallenge challenge -> saslHandler.handleChallenge(challenge);
+                case XmppStanza.StartTlsProceed ignored -> streamHandler.handleStartTlsProceed();
+                case XmppStanza.StartTlsFailure ignored -> streamHandler.handleStartTlsFailure();
                 case XmppStanza.IqStanza iq -> handleIqStanza(iq);
                 case XmppStanza.PresenceStanza presence -> handlePresence(presence);
                 default -> log.debug("Unhandled stanza type: {}", stanza.getClass().getSimpleName());

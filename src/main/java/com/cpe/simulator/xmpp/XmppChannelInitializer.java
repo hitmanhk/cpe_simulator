@@ -5,11 +5,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-
-import javax.net.ssl.SSLEngine;
 import java.util.function.Consumer;
 
 public class XmppChannelInitializer extends ChannelInitializer<SocketChannel> {
@@ -26,12 +21,8 @@ public class XmppChannelInitializer extends ChannelInitializer<SocketChannel> {
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();
 
-        if (config.isTls()) {
-            SslContext sslContext = SslContextBuilder.forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                .build();
-            SSLEngine sslEngine = sslContext.newEngine(ch.alloc(), config.getHost(), config.getPort());
-            pipeline.addLast("ssl", new io.netty.handler.ssl.SslHandler(sslEngine));
+        if (config.isDirectTls()) {
+            pipeline.addLast("ssl", XmppTlsSupport.newHandler(ch, config));
         }
 
         pipeline.addLast("xmppDecoder", new XmppStreamDecoder());

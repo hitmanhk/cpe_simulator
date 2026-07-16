@@ -9,9 +9,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.ssl.SslHandler;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -23,7 +21,7 @@ import java.util.function.Consumer;
 public class XmppConnection {
 
     public enum ConnectionState {
-        DISCONNECTED, CONNECTING, AUTHENTICATING, AUTHENTICATED, BINDING, BOUND, ONLINE, FAILED
+        DISCONNECTED, CONNECTING, TLS_NEGOTIATING, AUTHENTICATING, AUTHENTICATED, BINDING, BOUND, ONLINE, FAILED
     }
 
     private volatile Channel channel;
@@ -59,7 +57,8 @@ public class XmppConnection {
         setState(ConnectionState.CONNECTING);
 
         StreamHandler streamHandler = new StreamHandler(this, config);
-        SaslHandler saslHandler = new SaslHandler(this, config, List.of(new PlainMechanism(), new ScramSha1Mechanism()));
+        SaslHandler saslHandler = new SaslHandler(this, config, List.of(
+            new PlainMechanism(), new ScramSha256Mechanism(), new ScramSha1Mechanism()));
         BindHandler bindHandler = new BindHandler(this, config);
         PresenceHandler presenceHandler = new PresenceHandler(this);
         PingHandler pingHandler = new PingHandler(this, config);
@@ -83,12 +82,8 @@ public class XmppConnection {
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
-                    if (config.isTls()) {
-                        SslContext sslContext = SslContextBuilder.forClient()
-                            .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                            .build();
-                        ch.pipeline().addLast("ssl",
-                            new io.netty.handler.ssl.SslHandler(sslContext.newEngine(ch.alloc(), config.getHost(), config.getPort())));
+                    if (config.isDirectTls()) {
+                        ch.pipeline().addLast("ssl", createSslHandler(ch));
                     }
                     ch.pipeline().addLast("xmppDecoder", new XmppStreamDecoder());
                     ch.pipeline().addLast("xmppEncoder", new XmppStreamEncoder());
@@ -105,8 +100,21 @@ public class XmppConnection {
         channelFuture.addListener(f -> {
             if (f.isSuccess()) {
                 channel = channelFuture.channel();
-                future.complete(null);
-                streamHandler.openStream();
+                if (config.isDirectTls()) {
+                    SslHandler sslHandler = channel.pipeline().get(SslHandler.class);
+                    sslHandler.handshakeFuture().addListener(handshake -> {
+                        if (handshake.isSuccess()) {
+                            future.complete(null);
+                            streamHandler.openStream();
+                        } else {
+                            setState(ConnectionState.FAILED);
+                            future.completeExceptionally(handshake.cause());
+                        }
+                    });
+                } else {
+                    future.complete(null);
+                    streamHandler.openStream();
+                }
             } else {
                 setState(ConnectionState.FAILED);
                 future.completeExceptionally(f.cause());
@@ -114,6 +122,43 @@ public class XmppConnection {
         });
 
         return future;
+    }
+
+    public CompletableFuture<Void> upgradeToTls() {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        Channel ch = channel;
+        if (ch == null || !ch.isActive()) {
+            future.completeExceptionally(new IllegalStateException("XMPP channel is not active"));
+            return future;
+        }
+
+        ch.eventLoop().execute(() -> {
+            try {
+                if (ch.pipeline().get(SslHandler.class) != null) {
+                    throw new IllegalStateException("TLS is already active");
+                }
+                XmppStreamDecoder decoder = ch.pipeline().get(XmppStreamDecoder.class);
+                if (decoder != null) {
+                    decoder.reset();
+                }
+                SslHandler sslHandler = createSslHandler(ch);
+                ch.pipeline().addFirst("ssl", sslHandler);
+                sslHandler.handshakeFuture().addListener(handshake -> {
+                    if (handshake.isSuccess()) {
+                        future.complete(null);
+                    } else {
+                        future.completeExceptionally(handshake.cause());
+                    }
+                });
+            } catch (Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        return future;
+    }
+
+    private SslHandler createSslHandler(Channel ch) throws Exception {
+        return XmppTlsSupport.newHandler(ch, config);
     }
 
     public void disconnect() {

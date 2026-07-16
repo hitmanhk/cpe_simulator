@@ -7,7 +7,7 @@ public sealed interface XmppStanza permits
     XmppStanza.StreamOpen, XmppStanza.StreamClose, XmppStanza.StreamFeatures,
     XmppStanza.AuthStanza, XmppStanza.AuthSuccess, XmppStanza.AuthFailure,
     XmppStanza.AuthChallenge, XmppStanza.AuthResponse,
-    XmppStanza.BindStanza, XmppStanza.StartTls, XmppStanza.StartTlsProceed,
+    XmppStanza.BindStanza, XmppStanza.StartTls, XmppStanza.StartTlsProceed, XmppStanza.StartTlsFailure,
     XmppStanza.RawXml {
     String getId();
 
@@ -79,6 +79,11 @@ public sealed interface XmppStanza permits
     }
 
     record StartTlsProceed() implements XmppStanza {
+        @Override
+        public String getId() { return null; }
+    }
+
+    record StartTlsFailure() implements XmppStanza {
         @Override
         public String getId() { return null; }
     }

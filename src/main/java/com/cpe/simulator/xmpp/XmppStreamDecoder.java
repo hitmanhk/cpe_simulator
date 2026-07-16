@@ -200,6 +200,10 @@ public class XmppStreamDecoder extends ByteToMessageDecoder {
             return new XmppStanza.StartTlsProceed();
         }
 
+        if (trimmed.startsWith("<failure") && trimmed.contains("xmlns=\"urn:ietf:params:xml:ns:xmpp-tls\"")) {
+            return new XmppStanza.StartTlsFailure();
+        }
+
         if (trimmed.startsWith("<iq")) {
             return parseIq(trimmed);
         }

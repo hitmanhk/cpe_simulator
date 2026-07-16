@@ -199,6 +199,13 @@ class XmppStreamDecoderTest {
     }
 
     @Test
+    void testDecodeStartTlsFailure() {
+        writeXml("<failure xmlns=\"urn:ietf:params:xml:ns:xmpp-tls\"/>");
+
+        assertInstanceOf(XmppStanza.StartTlsFailure.class, channel.readInbound());
+    }
+
+    @Test
     void testDecodeAuthFailure() {
         String failure = "<failure xmlns=\"urn:ietf:params:xml:ns:xmpp-sasl\">"
             + "<not-authorized/></failure>";

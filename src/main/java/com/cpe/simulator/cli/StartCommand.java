@@ -96,8 +96,11 @@ public class StartCommand implements Runnable {
     @Option(names = {"--xmpp-resource"}, description = "XMPP resource", defaultValue = "sim")
     String xmppResource;
 
-    @Option(names = {"--xmpp-tls"}, description = "Enable XMPP TLS", defaultValue = "false")
-    boolean xmppTls;
+    @Option(names = {"--xmpp-tls-mode"}, description = "XMPP TLS mode: NONE, DIRECT, or STARTTLS")
+    String xmppTlsMode;
+
+    @Option(names = {"--xmpp-sasl-mechanism"}, description = "XMPP SASL mechanism: PLAIN, SCRAM-SHA-1, or SCRAM-SHA-256")
+    String xmppSaslMechanism;
 
     @Option(names = {"--reboot-delay"}, description = "Reboot delay in seconds", defaultValue = "5")
     int rebootDelay;
@@ -253,6 +256,9 @@ public class StartCommand implements Runnable {
         if (xmppPassword != null) xmpp.setPassword(xmppPassword);
         xmpp.setUserPrefix(xmppUserPrefix);
         xmpp.setResource(xmppResource);
-        xmpp.setTls(xmppTls);
+        if (xmppTlsMode != null) {
+            xmpp.setTlsMode(xmppTlsMode);
+        }
+        if (xmppSaslMechanism != null) xmpp.setSaslMechanism(xmppSaslMechanism);
     }
 }

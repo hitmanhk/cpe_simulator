@@ -49,13 +49,22 @@ public class ConfigLoader {
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class AppConfigWrapper {
         private AppConfig simulator;
+        private AppConfig.XmppConfig xmpp;
 
         public AppConfig getSimulator() {
-            return simulator != null ? simulator : new AppConfig();
+            AppConfig config = simulator != null ? simulator : new AppConfig();
+            if (xmpp != null) {
+                config.setXmpp(xmpp);
+            }
+            return config;
         }
 
         public void setSimulator(AppConfig simulator) {
             this.simulator = simulator;
+        }
+
+        public void setXmpp(AppConfig.XmppConfig xmpp) {
+            this.xmpp = xmpp;
         }
     }
 }

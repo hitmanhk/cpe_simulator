@@ -92,7 +92,7 @@ class CliCommandTest {
         assertEquals(5222, cmd.xmppPort);
         assertEquals("cpe", cmd.xmppUserPrefix);
         assertEquals("sim", cmd.xmppResource);
-        assertFalse(cmd.xmppTls);
+        assertNull(cmd.xmppTlsMode);
         assertEquals(5, cmd.rebootDelay);
         assertEquals(10, cmd.downloadDelay);
         assertEquals(0.99, cmd.downloadSuccessRate, 0.001);
@@ -122,6 +122,19 @@ class CliCommandTest {
         assertEquals("TST", cmd.serialPrefix);
         assertEquals(600, cmd.informInterval);
         assertEquals(500, cmd.maxSessions);
+    }
+
+    @Test
+    void testXmppTlsAndSaslOptions() {
+        StartCommand cmd = new StartCommand();
+        CommandLine cl = new CommandLine(cmd);
+
+        cl.parseArgs("--acs-url", "http://localhost:7547",
+            "--xmpp-tls-mode", "STARTTLS",
+            "--xmpp-sasl-mechanism", "SCRAM-SHA-256");
+
+        assertEquals("STARTTLS", cmd.xmppTlsMode);
+        assertEquals("SCRAM-SHA-256", cmd.xmppSaslMechanism);
     }
 
     @Test
