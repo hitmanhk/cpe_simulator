@@ -527,6 +527,11 @@ parameters:
     multiInstance: true
 
   # ===================== XMPP =====================
+  - path: InternetGatewayDevice.XMPP.Connection.1.Username
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 2
   - path: InternetGatewayDevice.XMPP.Connection.1.Password
     type: xsd:string
     value: ""

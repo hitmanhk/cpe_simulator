@@ -55,7 +55,10 @@ public class SaslHandler {
         }
 
         connection.setState(XmppConnection.ConnectionState.AUTHENTICATING);
-        String username = connection.getDeviceId().toLowerCase(Locale.ROOT);
+        String username = connection.getXmppUsername();
+        if (username == null || username.isBlank()) {
+            username = connection.getDeviceId().toLowerCase(Locale.ROOT);
+        }
         authUsername = username;
         String password = connection.getXmppPassword() != null ? connection.getXmppPassword() : config.getPassword();
         authPassword = password;

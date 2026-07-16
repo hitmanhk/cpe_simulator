@@ -36,6 +36,10 @@ public class XmppEngine {
         return new XmppConnection(deviceId, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback, connReqAuthConfig);
     }
 
+    public XmppConnection createConnection(String deviceId, String serialNumber) {
+        return new XmppConnection(deviceId, serialNumber, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback, connReqAuthConfig);
+    }
+
     public void start(List<XmppConnection> connections) {
         this.connections.addAll(connections);
         running = true;

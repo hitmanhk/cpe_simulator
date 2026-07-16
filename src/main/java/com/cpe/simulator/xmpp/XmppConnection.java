@@ -36,10 +36,17 @@ public class XmppConnection {
     private volatile Consumer<String> onFailureCallback;
     private volatile Consumer<String> onSuccessCallback;
     private volatile boolean disconnectRequested;
+    private volatile String xmppUsername;
     private volatile String xmppPassword;
 
     public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
+        this(deviceId, deviceId, config, localAddress, connectionRequestCallback, connReqAuthConfig);
+    }
+
+    public XmppConnection(String deviceId, String serialNumber, AppConfig.XmppConfig config, String localAddress,
+                          Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
         this.deviceId = deviceId;
+        this.xmppUsername = serialNumber.toLowerCase(java.util.Locale.ROOT);
         this.config = config;
         try {
             this.localInetAddress = (localAddress != null && !localAddress.isEmpty())
@@ -248,6 +255,14 @@ public class XmppConnection {
 
     public String getXmppPassword() {
         return xmppPassword;
+    }
+
+    public String getXmppUsername() {
+        return xmppUsername;
+    }
+
+    public void setXmppUsername(String xmppUsername) {
+        this.xmppUsername = xmppUsername;
     }
 
     public void setXmppPassword(String xmppPassword) {

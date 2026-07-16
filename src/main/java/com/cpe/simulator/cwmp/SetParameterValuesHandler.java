@@ -10,6 +10,8 @@ public class SetParameterValuesHandler implements RpcHandler {
 
     private static final String XMPP_PASSWORD_TR181 = "Device.XMPP.Connection.1.Password";
     private static final String XMPP_PASSWORD_TR098 = "InternetGatewayDevice.XMPP.Connection.1.Password";
+    private static final String XMPP_USERNAME_TR181 = "Device.XMPP.Connection.1.Username";
+    private static final String XMPP_USERNAME_TR098 = "InternetGatewayDevice.XMPP.Connection.1.Username";
 
     private final SoapParser soapParser = new SoapParser();
     private final SoapBuilder soapBuilder = new SoapBuilder();
@@ -80,15 +82,16 @@ public class SetParameterValuesHandler implements RpcHandler {
                 device.triggerInform("4 VALUE CHANGE");
             }
 
-            boolean xmppPasswordSet = false;
+            boolean xmppCredentialSet = false;
             for (SoapEnvelope.ParameterInfo param : params) {
-                if (XMPP_PASSWORD_TR181.equals(param.name()) || XMPP_PASSWORD_TR098.equals(param.name())) {
-                    xmppPasswordSet = true;
+                if (XMPP_PASSWORD_TR181.equals(param.name()) || XMPP_PASSWORD_TR098.equals(param.name())
+                    || XMPP_USERNAME_TR181.equals(param.name()) || XMPP_USERNAME_TR098.equals(param.name())) {
+                    xmppCredentialSet = true;
                     break;
                 }
             }
 
-            if (xmppPasswordSet) {
+            if (xmppCredentialSet) {
                 device.connectXmpp();
             }
 

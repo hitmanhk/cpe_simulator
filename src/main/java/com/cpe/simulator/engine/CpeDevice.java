@@ -24,6 +24,8 @@ public class CpeDevice implements DeviceContext {
 
     private static final String XMPP_PASSWORD_TR181 = "Device.XMPP.Connection.1.Password";
     private static final String XMPP_PASSWORD_TR098 = "InternetGatewayDevice.XMPP.Connection.1.Password";
+    private static final String XMPP_USERNAME_TR181 = "Device.XMPP.Connection.1.Username";
+    private static final String XMPP_USERNAME_TR098 = "InternetGatewayDevice.XMPP.Connection.1.Username";
 
     private final String deviceId;
     private final String serialNumber;
@@ -400,7 +402,15 @@ public class CpeDevice implements DeviceContext {
             return;
         }
 
-        XmppConnection conn = xmppEngine.createConnection(deviceId);
+        String username = getNonEmptyParameter(XMPP_USERNAME_TR181);
+        if (username == null) {
+            username = getNonEmptyParameter(XMPP_USERNAME_TR098);
+        }
+
+        XmppConnection conn = xmppEngine.createConnection(deviceId, serialNumber);
+        if (username != null) {
+            conn.setXmppUsername(username);
+        }
         conn.setXmppPassword(password);
         conn.onStateChange(xmppState -> {
             switch (xmppState) {
@@ -418,6 +428,14 @@ public class CpeDevice implements DeviceContext {
         });
         xmppConnection = conn;
         xmppEngine.addConnection(conn);
+    }
+
+    private String getNonEmptyParameter(String path) {
+        ParameterNode node = dataModel.getNode(path);
+        if (node == null || node.getValue() == null || node.getValue().getValue().isEmpty()) {
+            return null;
+        }
+        return node.getValue().getValue();
     }
 
     public RpcRegistry getRpcRegistry() {

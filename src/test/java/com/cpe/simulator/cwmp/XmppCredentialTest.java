@@ -42,6 +42,18 @@ class XmppCredentialTest {
     }
 
     @Test
+    void tr181ModelContainsXmppUsernameParameter() {
+        DataModel model = ModelLoader.load("tr181");
+
+        ParameterNode node = model.getNode("Device.XMPP.Connection.1.Username");
+        assertNotNull(node);
+        assertTrue(node.isWritable());
+        assertEquals("", node.getValue().getValue());
+        assertEquals("xsd:string", node.getValue().getType());
+        assertEquals(2, node.getNotification());
+    }
+
+    @Test
     void tr098ModelContainsXmppPasswordParameter() {
         DataModel model = ModelLoader.load("tr098");
 
@@ -55,6 +67,18 @@ class XmppCredentialTest {
         assertEquals("", value.getValue(), "XMPP Password initial value should be empty string");
         assertEquals("xsd:string", value.getType(), "XMPP Password type should be xsd:string");
         assertEquals(2, node.getNotification(), "XMPP Password notification should be 2");
+    }
+
+    @Test
+    void tr098ModelContainsXmppUsernameParameter() {
+        DataModel model = ModelLoader.load("tr098");
+
+        ParameterNode node = model.getNode("InternetGatewayDevice.XMPP.Connection.1.Username");
+        assertNotNull(node);
+        assertTrue(node.isWritable());
+        assertEquals("", node.getValue().getValue());
+        assertEquals("xsd:string", node.getValue().getType());
+        assertEquals(2, node.getNotification());
     }
 
     @Mock
@@ -116,6 +140,26 @@ class XmppCredentialTest {
         SoapEnvelope response = handler.handle(device, request);
 
         assertFalse(response.isFault());
+        verify(device).connectXmpp();
+    }
+
+    @Test
+    void setParameterValuesWithXmppUsernameTriggersConnectXmpp() {
+        DataModel dataModel = ModelLoader.load("tr181");
+        when(device.getDataModel()).thenReturn(dataModel);
+
+        SetParameterValuesHandler handler = new SetParameterValuesHandler();
+        SoapEnvelope request = new SoapEnvelope();
+        request.setCwmpId("ID-USERNAME");
+        request.setMethodName("SetParameterValues");
+        request.setRawBody(buildSetParameterValuesXml(
+            "Device.XMPP.Connection.1.Username", "acs-provisioned-user", "xsd:string"));
+
+        SoapEnvelope response = handler.handle(device, request);
+
+        assertFalse(response.isFault());
+        assertEquals("acs-provisioned-user",
+            dataModel.getValue("Device.XMPP.Connection.1.Username").getValue());
         verify(device).connectXmpp();
     }
 
@@ -185,6 +229,36 @@ class XmppCredentialTest {
         handler.startAuth(features);
 
         verify(mockMechanism).getInitialResponse("dev001", "global-secret");
+    }
+
+    @Test
+    void saslHandlerUsesAcsProvisionedUsernameVerbatim() {
+        XmppConnection connection = mock(XmppConnection.class);
+        when(connection.getDeviceId()).thenReturn("000000-SimCPE-ESN00001");
+        when(connection.getXmppUsername()).thenReturn("AcsProvisionedUser");
+
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+        config.setPassword("secret");
+        config.setSaslMechanism("MOCK");
+
+        SaslMechanism mockMechanism = mock(SaslMechanism.class);
+        when(mockMechanism.getMechanismName()).thenReturn("MOCK");
+        when(mockMechanism.getInitialResponse(anyString(), anyString())).thenReturn("ir");
+
+        SaslHandler handler = new SaslHandler(connection, config, List.of(mockMechanism));
+        handler.startAuth(new XmppStanza.StreamFeatures(
+            "<stream:features/>", List.of("MOCK"), false, false, false));
+
+        verify(mockMechanism).getInitialResponse("AcsProvisionedUser", "secret");
+    }
+
+    @Test
+    void xmppConnectionUsesLowercaseEsnAsDefaultUsername() {
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+        XmppConnection connection = new XmppConnection(
+            "000000-SimCPE-ESN00001", "ESN00001", config, null, null, null);
+
+        assertEquals("esn00001", connection.getXmppUsername());
     }
 
     private String buildSetParameterValuesXml(String name, String value, String type) {

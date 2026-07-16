@@ -115,7 +115,8 @@ public class SimulationEngine {
             if (config.isXmppOnly()) {
                 List<XmppConnection> xmppConnections = new ArrayList<>();
                 for (CpeDevice device : devices) {
-                    XmppConnection conn = xmppEngine.createConnection(device.getDeviceId());
+                    XmppConnection conn = xmppEngine.createConnection(
+                        device.getDeviceId(), device.getSerialNumber());
                     conn.onStateChange(xmppState -> {
                         switch (xmppState) {
                             case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
