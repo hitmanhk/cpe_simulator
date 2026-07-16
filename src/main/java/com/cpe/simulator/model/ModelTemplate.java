@@ -51,8 +51,11 @@ public class ModelTemplate {
 
     private static void resolveNodeRecursive(ParameterNode node, TemplateContext ctx) {
         if (node.getValue() != null) {
-            String resolved = resolve(node.getValue().getValue(), ctx);
-            node.getValue().setValue(resolved);
+            String original = node.getValue().getValue();
+            String resolved = resolve(original, ctx);
+            if (!resolved.equals(original)) {
+                node.getValue().setValue(resolved);
+            }
         }
         for (ParameterNode child : node.getChildren().values()) {
             resolveNodeRecursive(child, ctx);

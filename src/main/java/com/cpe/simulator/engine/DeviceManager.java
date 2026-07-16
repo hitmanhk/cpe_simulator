@@ -51,7 +51,7 @@ public class DeviceManager {
         String serialNumber = IdGenerator.serialNumber(config.getSerialPrefix(), index);
         String deviceId = IdGenerator.deviceId(config.getOui(), config.getProductClass(), serialNumber);
 
-        DataModel deviceModel = templateModel.deepCopy();
+        DataModel deviceModel = templateModel.sharedCopy();
 
         String connReqUrl = String.format("http://%s:%d/connReq/%s",
             config.getConnReqHost(), config.getConnReqPort(), deviceId);
@@ -61,6 +61,7 @@ public class DeviceManager {
             config.getAcsUrl(), connReqUrl
         );
         ModelTemplate.resolveModel(deviceModel, ctx);
+        deviceModel.saveDefaults();
 
         CpeDevice device = new CpeDevice(
             deviceId, serialNumber, config.getOui(), config.getProductClass(),
