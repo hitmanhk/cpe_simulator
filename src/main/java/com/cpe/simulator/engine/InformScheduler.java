@@ -2,6 +2,7 @@ package com.cpe.simulator.engine;
 
 import com.cpe.simulator.common.AppConfig;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
@@ -21,30 +22,50 @@ public class InformScheduler {
     }
 
     public void schedulePeriodicInform(CpeDevice device) {
-        int interval = config.getInformInterval();
-        double jitter = config.getInformJitter();
+        scheduleInform(device, "2 PERIODIC", config.getInformSchedules().getPeriodic());
+    }
+
+    public void scheduleConfiguredInforms(CpeDevice device) {
+        AppConfig.InformSchedules schedules = config.getInformSchedules();
+        scheduleInform(device, "0 BOOTSTRAP", schedules.getBootstrap());
+        scheduleInform(device, "1 BOOT", schedules.getBoot());
+        scheduleInform(device, "2 PERIODIC", schedules.getPeriodic());
+    }
+
+    private void scheduleInform(CpeDevice device, String eventCode, AppConfig.InformSchedule schedule) {
+        if (schedule.getInterval() == 0) {
+            return;
+        }
+
+        int interval = schedule.getInterval();
+        double initialJitter = schedule.getInitialJitter();
 
         Runnable task = () -> {
             try {
-                device.triggerInform("2 PERIODIC");
+                device.triggerInform(eventCode);
             } catch (Exception e) {
                 // ignore individual inform failures
             }
         };
 
-        long initialDelay = computeJitteredInterval(interval, jitter);
+        long initialDelay = computeJitteredInterval(interval, initialJitter);
         long period = interval;
 
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
             task, initialDelay, period, TimeUnit.SECONDS
         );
-        scheduledTasks.put(device.getDeviceId(), future);
+        scheduledTasks.put(taskKey(device.getDeviceId(), eventCode), future);
     }
 
     public void cancelScheduledInform(String deviceId) {
-        ScheduledFuture<?> future = scheduledTasks.remove(deviceId);
-        if (future != null) {
-            future.cancel(false);
+        String prefix = deviceId + "|";
+        for (String key : List.copyOf(scheduledTasks.keySet())) {
+            if (key.startsWith(prefix)) {
+                ScheduledFuture<?> future = scheduledTasks.remove(key);
+                if (future != null) {
+                    future.cancel(false);
+                }
+            }
         }
     }
 
@@ -70,8 +91,16 @@ public class InformScheduler {
         }
     }
 
-    private long computeJitteredInterval(int interval, double jitter) {
+    long computeJitteredInterval(int interval, double jitter) {
         double factor = 1.0 + (Math.random() * 2 - 1) * jitter;
         return Math.max(1, (long) (interval * factor));
+    }
+
+    int getScheduledTaskCount() {
+        return scheduledTasks.size();
+    }
+
+    private String taskKey(String deviceId, String eventCode) {
+        return deviceId + "|" + eventCode;
     }
 }

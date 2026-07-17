@@ -37,11 +37,8 @@ public class AppConfig {
     @JsonProperty("serial-start")
     private int serialStart = 0;
 
-    @JsonProperty("inform-interval")
-    private int informInterval = 300;
-
-    @JsonProperty("inform-jitter")
-    private double informJitter = 0.3;
+    @JsonProperty("inform-schedules")
+    private InformSchedules informSchedules = new InformSchedules();
 
     @JsonProperty("max-sessions")
     private int maxSessions = 1000;
@@ -88,9 +85,6 @@ public class AppConfig {
     @JsonProperty("xmpp-only")
     private boolean xmppOnly = false;
 
-    @JsonProperty("no-periodic")
-    private boolean noPeriodic = false;
-
     @JsonProperty("local-address")
     private String localAddress;
 
@@ -117,10 +111,14 @@ public class AppConfig {
     public void setSerialPrefix(String serialPrefix) { this.serialPrefix = serialPrefix; }
     public int getSerialStart() { return serialStart; }
     public void setSerialStart(int serialStart) { this.serialStart = serialStart; }
-    public int getInformInterval() { return informInterval; }
-    public void setInformInterval(int informInterval) { this.informInterval = informInterval; }
-    public double getInformJitter() { return informJitter; }
-    public void setInformJitter(double informJitter) { this.informJitter = informJitter; }
+    @JsonProperty("inform-interval")
+    public int getInformInterval() { return informSchedules.getPeriodic().getInterval(); }
+    @JsonProperty("inform-interval")
+    public void setInformInterval(int informInterval) { informSchedules.getPeriodic().setInterval(informInterval); }
+    @JsonProperty("inform-jitter")
+    public double getInformJitter() { return informSchedules.getPeriodic().getInitialJitter(); }
+    @JsonProperty("inform-jitter")
+    public void setInformJitter(double informJitter) { informSchedules.getPeriodic().setInitialJitter(informJitter); }
     public int getMaxSessions() { return maxSessions; }
     public void setMaxSessions(int maxSessions) { this.maxSessions = maxSessions; }
     public int getConnectBatch() { return connectBatch; }
@@ -149,10 +147,12 @@ public class AppConfig {
     public void setDownloadSuccessRate(double downloadSuccessRate) { this.downloadSuccessRate = downloadSuccessRate; }
     public int getSessionTimeout() { return sessionTimeout; }
     public void setSessionTimeout(int sessionTimeout) { this.sessionTimeout = sessionTimeout; }
+    public InformSchedules getInformSchedules() { return informSchedules; }
+    public void setInformSchedules(InformSchedules informSchedules) {
+        this.informSchedules = informSchedules != null ? informSchedules : new InformSchedules();
+    }
     public boolean isXmppOnly() { return xmppOnly; }
     public void setXmppOnly(boolean xmppOnly) { this.xmppOnly = xmppOnly; }
-    public boolean isNoPeriodic() { return noPeriodic; }
-    public void setNoPeriodic(boolean noPeriodic) { this.noPeriodic = noPeriodic; }
     public String getLocalAddress() { return localAddress; }
     public void setLocalAddress(String localAddress) { this.localAddress = localAddress; }
     public XmppConfig getXmpp() { return xmpp; }
@@ -167,6 +167,74 @@ public class AppConfig {
     public boolean isConnReqAuthEnabled() {
         return connReqUser != null && !connReqUser.isEmpty()
             && connReqPassword != null && !connReqPassword.isEmpty();
+    }
+
+    public void validateInformSchedules() {
+        informSchedules.validate();
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class InformSchedules {
+        private InformSchedule bootstrap = new InformSchedule(86400, 0.2);
+        private InformSchedule boot = new InformSchedule(3600, 0.2);
+        private InformSchedule periodic = new InformSchedule(300, 0.3);
+
+        public InformSchedule getBootstrap() { return bootstrap; }
+        public void setBootstrap(InformSchedule bootstrap) {
+            if (bootstrap != null) this.bootstrap.mergeFrom(bootstrap);
+        }
+        public InformSchedule getBoot() { return boot; }
+        public void setBoot(InformSchedule boot) {
+            if (boot != null) this.boot.mergeFrom(boot);
+        }
+        public InformSchedule getPeriodic() { return periodic; }
+        public void setPeriodic(InformSchedule periodic) {
+            if (periodic != null) this.periodic.mergeFrom(periodic);
+        }
+
+        public boolean hasEnabledSchedule() {
+            return bootstrap.getInterval() > 0 || boot.getInterval() > 0 || periodic.getInterval() > 0;
+        }
+
+        private void validate() {
+            bootstrap.validate("bootstrap");
+            boot.validate("boot");
+            periodic.validate("periodic");
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class InformSchedule {
+        @JsonProperty("interval")
+        private Integer interval;
+        @JsonProperty("initial-jitter")
+        private Double initialJitter;
+
+        public InformSchedule() {}
+
+        public InformSchedule(int interval, double initialJitter) {
+            this.interval = interval;
+            this.initialJitter = initialJitter;
+        }
+
+        public int getInterval() { return interval != null ? interval : 0; }
+        public void setInterval(int interval) { this.interval = interval; }
+        public double getInitialJitter() { return initialJitter != null ? initialJitter : 0.0; }
+        public void setInitialJitter(double initialJitter) { this.initialJitter = initialJitter; }
+
+        private void mergeFrom(InformSchedule overrides) {
+            if (overrides.interval != null) interval = overrides.interval;
+            if (overrides.initialJitter != null) initialJitter = overrides.initialJitter;
+        }
+
+        private void validate(String name) {
+            if (getInterval() < 0) {
+                throw new IllegalArgumentException(name + " inform interval must be greater than or equal to 0");
+            }
+            if (getInitialJitter() < 0.0 || getInitialJitter() > 1.0) {
+                throw new IllegalArgumentException(name + " initial-jitter must be between 0.0 and 1.0");
+            }
+        }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

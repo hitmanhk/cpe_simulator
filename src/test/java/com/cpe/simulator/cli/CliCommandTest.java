@@ -1,5 +1,6 @@
 package com.cpe.simulator.cli;
 
+import com.cpe.simulator.common.AppConfig;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
@@ -135,6 +136,30 @@ class CliCommandTest {
 
         assertEquals("STARTTLS", cmd.xmppTlsMode);
         assertEquals("SCRAM-SHA-256", cmd.xmppSaslMechanism);
+    }
+
+    @Test
+    void explicitCliValuesOverrideYamlWithoutOverwritingOtherValues() {
+        StartCommand cmd = new StartCommand();
+        CommandLine cl = new CommandLine(cmd);
+        cl.parseArgs(
+            "--acs-url", "http://cli.example.com:7547/",
+            "--bootstrap-inform-interval", "7200",
+            "--periodic-inform-initial-jitter", "0.9"
+        );
+
+        AppConfig config = new AppConfig();
+        config.setCount(777);
+        config.setInformInterval(120);
+        config.getInformSchedules().getBootstrap().setInterval(0);
+
+        cmd.applyCliOverrides(config);
+
+        assertEquals("http://cli.example.com:7547/", config.getAcsUrl());
+        assertEquals(777, config.getCount());
+        assertEquals(120, config.getInformInterval());
+        assertEquals(0.9, config.getInformJitter(), 0.001);
+        assertEquals(7200, config.getInformSchedules().getBootstrap().getInterval());
     }
 
     @Test

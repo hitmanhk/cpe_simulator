@@ -11,7 +11,6 @@ class StartupModeTest {
     void testXmppOnlyConfigDefaults() {
         AppConfig config = new AppConfig();
         assertFalse(config.isXmppOnly());
-        assertFalse(config.isNoPeriodic());
     }
 
     @Test
@@ -24,11 +23,6 @@ class StartupModeTest {
         config.setXmppOnly(false);
         assertFalse(config.isXmppOnly());
 
-        config.setNoPeriodic(true);
-        assertTrue(config.isNoPeriodic());
-
-        config.setNoPeriodic(false);
-        assertFalse(config.isNoPeriodic());
     }
 
     @Test
@@ -59,71 +53,56 @@ class StartupModeTest {
     }
 
     @Test
-    void testNoPeriodicAllowedInPublicMode() {
-        StartCommand cmd = new StartCommand();
-        cmd.mode = "public";
-        cmd.noPeriodic = true;
-        cmd.acsUrl = "http://localhost:7547/";
+    void testZeroPeriodicIntervalDisablesSchedule() {
+        AppConfig config = new AppConfig();
+        config.setInformInterval(0);
 
-        String error = cmd.validateNatMode();
-        assertNull(error);
+        assertEquals(0, config.getInformSchedules().getPeriodic().getInterval());
+        assertDoesNotThrow(config::validateInformSchedules);
     }
 
     @Test
-    void testNoPeriodicAllowedInNatMode() {
-        StartCommand cmd = new StartCommand();
-        cmd.mode = "nat";
-        cmd.noPeriodic = true;
-        cmd.acsUrl = "http://localhost:7547/";
-        cmd.xmppHost = "xmpp.example.com";
-        cmd.xmppDomain = "iot.example.com";
-        cmd.xmppPassword = "secret";
-
-        String error = cmd.validateNatMode();
-        assertNull(error);
-    }
-
-    @Test
-    void testXmppOnlyWithNoPeriodicBothSet() {
+    void testXmppOnlyWithZeroPeriodicInterval() {
         AppConfig config = new AppConfig();
         config.setMode("nat");
         config.setXmppOnly(true);
-        config.setNoPeriodic(true);
+        config.getInformSchedules().getPeriodic().setInterval(0);
 
         assertTrue(config.isXmppOnly());
-        assertTrue(config.isNoPeriodic());
+        assertEquals(0, config.getInformSchedules().getPeriodic().getInterval());
         assertTrue(config.isNatMode());
     }
 
     @Test
-    void testXmppOnlyImpliesNoPeriodicBehavior() {
+    void testXmppOnlySkipsScheduledInformBehavior() {
         AppConfig config = new AppConfig();
         config.setMode("nat");
         config.setXmppOnly(true);
 
         assertTrue(config.isXmppOnly());
-        assertFalse(config.isNoPeriodic());
+        assertTrue(config.getInformSchedules().hasEnabledSchedule());
 
-        boolean shouldSkipPeriodic = config.isXmppOnly() || config.isNoPeriodic();
-        assertTrue(shouldSkipPeriodic);
+        boolean shouldSkipScheduledInforms = config.isXmppOnly();
+        assertTrue(shouldSkipScheduledInforms);
     }
 
     @Test
-    void testPeriodicInformCondition() {
+    void testScheduledInformCondition() {
         AppConfig xmppOnly = new AppConfig();
         xmppOnly.setXmppOnly(true);
-        assertFalse(!xmppOnly.isXmppOnly() && !xmppOnly.isNoPeriodic());
+        assertFalse(!xmppOnly.isXmppOnly() && xmppOnly.getInformSchedules().hasEnabledSchedule());
 
-        AppConfig noPeriodic = new AppConfig();
-        noPeriodic.setNoPeriodic(true);
-        assertFalse(!noPeriodic.isXmppOnly() && !noPeriodic.isNoPeriodic());
+        AppConfig allDisabled = new AppConfig();
+        allDisabled.getInformSchedules().getBootstrap().setInterval(0);
+        allDisabled.getInformSchedules().getBoot().setInterval(0);
+        allDisabled.getInformSchedules().getPeriodic().setInterval(0);
+        assertFalse(!allDisabled.isXmppOnly() && allDisabled.getInformSchedules().hasEnabledSchedule());
 
         AppConfig both = new AppConfig();
         both.setXmppOnly(true);
-        both.setNoPeriodic(true);
-        assertFalse(!both.isXmppOnly() && !both.isNoPeriodic());
+        assertFalse(!both.isXmppOnly() && both.getInformSchedules().hasEnabledSchedule());
 
         AppConfig normal = new AppConfig();
-        assertTrue(!normal.isXmppOnly() && !normal.isNoPeriodic());
+        assertTrue(!normal.isXmppOnly() && normal.getInformSchedules().hasEnabledSchedule());
     }
 }

@@ -54,6 +54,8 @@ java -jar target/cpe-simulator.jar start \
   --acs-url http://acs.example.com:7547/
 ```
 
+公网和 NAT 普通模式启动时，每台设备会先发送一次 `0 BOOTSTRAP`。`--xmpp-only` 模式不发送启动或周期 CWMP Inform。
+
 ### 使用配置文件启动
 
 ```bash
@@ -94,14 +96,20 @@ cpe-sim start [选项]
 | `--oui <OUI>` | OUI 前缀 | `000000` |
 | `--product-class <class>` | 产品类别 | `SimCPE` |
 | `--serial-prefix <prefix>` | 序列号前缀 | `SIM` |
-| `--inform-interval <seconds>` | 定时 Inform 间隔（秒） | `300` |
-| `--inform-jitter <ratio>` | Inform 抖动比例（0.0-1.0） | `0.3` |
+| `--inform-interval <seconds>` | `2 PERIODIC` 上报周期（兼容参数） | `300` |
+| `--inform-jitter <ratio>` | `2 PERIODIC` 首次调度抖动（兼容参数） | `0.3` |
+| `--bootstrap-inform-interval <seconds>` | `0 BOOTSTRAP` 上报周期 | YAML 配置 |
+| `--bootstrap-inform-initial-jitter <ratio>` | `0 BOOTSTRAP` 首次调度抖动 | YAML 配置 |
+| `--boot-inform-interval <seconds>` | 周期性 `1 BOOT` 上报周期 | YAML 配置 |
+| `--boot-inform-initial-jitter <ratio>` | 周期性 `1 BOOT` 首次调度抖动 | YAML 配置 |
+| `--periodic-inform-interval <seconds>` | `2 PERIODIC` 上报周期 | `300` |
+| `--periodic-inform-initial-jitter <ratio>` | `2 PERIODIC` 首次调度抖动 | `0.3` |
 | `--max-sessions <N>` | 最大并发 CWMP 会话数 | `1000` |
 | `--connect-batch <N>` | XMPP 批量连接数 | `1000` |
 | `--connect-batch-delay <ms>` | 批次间隔（毫秒） | `200` |
-| `--boot-batch-size <N>` | BOOT Inform 每批设备数 | `100` |
-| `--boot-batch-delay <ms>` | BOOT Inform 批次间隔（毫秒） | `1000` |
-| `--boot-jitter <ratio>` | BOOT Inform 批内随机抖动（0.0-1.0） | `0.5` |
+| `--boot-batch-size <N>` | 启动 BOOTSTRAP Inform 每批设备数 | `100` |
+| `--boot-batch-delay <ms>` | 启动 BOOTSTRAP Inform 批次间隔（毫秒） | `1000` |
+| `--boot-jitter <ratio>` | 启动 BOOTSTRAP Inform 批内随机抖动（0.0-1.0） | `0.5` |
 | `--conn-req-host <host>` | 回连监听地址 | `0.0.0.0` |
 | `--conn-req-port <port>` | 回连监听端口 | `7547` |
 | `--conn-req-user <user>` | 回连认证用户名 | - |
@@ -114,8 +122,7 @@ cpe-sim start [选项]
 | `--xmpp-resource <res>` | XMPP 资源名 | `sim` |
 | `--xmpp-tls-mode <NONE\|DIRECT\|STARTTLS>` | XMPP TLS 建立模式 | `NONE` |
 | `--xmpp-sasl-mechanism <name>` | SASL 认证机制 | `SCRAM-SHA-1` |
-| `--xmpp-only` | 仅 XMPP 模式（跳过 CwmpServer 和定时 Inform） | `false` |
-| `--no-periodic` | 禁用定时 Inform 上报 | `false` |
+| `--xmpp-only` | 仅 XMPP 模式（跳过 CwmpServer、启动 BOOTSTRAP 和周期 Inform） | `false` |
 | `--reboot-delay <seconds>` | 模拟重启延迟 | `5` |
 | `--download-delay <seconds>` | 模拟下载延迟 | `10` |
 | `--download-success-rate <rate>` | 下载成功率（0.0-1.0） | `0.99` |
@@ -180,19 +187,26 @@ simulator:
   oui: "000000"                   # OUI 前缀
   product-class: SimCPE           # 产品类别
   serial-prefix: SIM              # 序列号前缀
-  inform-interval: 300            # 定时 Inform 间隔（秒）
-  inform-jitter: 0.3              # Inform 抖动比例
+  inform-schedules:
+    bootstrap:
+      interval: 86400             # 上报周期（秒），0 表示禁用
+      initial-jitter: 0.2         # 首次调度抖动比例，可省略
+    boot:
+      interval: 3600              # 0 表示禁用
+      initial-jitter: 0.2
+    periodic:
+      interval: 300               # 0 表示禁用
+      initial-jitter: 0.3
   max-sessions: 1000              # 最大并发会话数
-  boot-batch-size: 100            # BOOT Inform 每批设备数
-  boot-batch-delay: 1000          # BOOT Inform 批次间隔（毫秒）
-  boot-jitter: 0.5                # BOOT Inform 批内随机抖动
+  boot-batch-size: 100            # 启动 BOOTSTRAP Inform 每批设备数
+  boot-batch-delay: 1000          # 启动 BOOTSTRAP Inform 批次间隔（毫秒）
+  boot-jitter: 0.5                # 启动 BOOTSTRAP Inform 批内随机抖动
   conn-req-host: 0.0.0.0         # 回连监听地址
   conn-req-port: 7547             # 回连监听端口
   conn-req-user: ""               # 回连认证用户名（可选）
   conn-req-password: ""           # 回连认证密码（可选）
   session-timeout: 30             # CWMP 会话超时（秒）
   xmpp-only: false                # 仅 XMPP 模式（跳过 CwmpServer 和定时 Inform）
-  no-periodic: false              # 禁用定时 Inform 上报
   reboot-delay: 5                 # 模拟重启延迟（秒）
   download-delay: 10              # 模拟下载延迟（秒）
   download-success-rate: 0.99     # 下载成功率
@@ -259,7 +273,7 @@ parameters:
 | `DeviceManager` | CPE 实例的批量创建和管理 |
 | `DeviceRegistry` | 并发设备注册表，处理回连请求路由 |
 | `BatchConnector` | 批量设备状态初始化 |
-| `BootLauncher` | BOOT Inform 阶梯式分批启动，带 jitter 抖动 |
+| `BootLauncher` | BOOTSTRAP Inform 阶梯式分批启动，带 jitter 抖动 |
 | `CpeDevice` | 单个 CPE 实例，包含 DataModel 和会话状态 |
 | `CwmpSession` | CWMP 会话状态机（IDLE → INFORM_SENT → CPE_HOLD → ACS_HOLD） |
 | `CwmpClient` | CPE→ACS 的 HTTP 客户端，支持 Digest 认证 |
@@ -318,7 +332,7 @@ JVM 推荐参数：`-Xmx3g`（50K 设备场景）
 - 虚拟线程处理 IO 密集型操作（HTTP、XMPP）
 - Semaphore 限制并发会话数（可配置 `max-sessions`）
 - 批量连接速率控制（`connect-batch` + `connect-batch-delay`）
-- BOOT Inform 阶梯式分批启动（`boot-batch-size` + `boot-batch-delay` + `boot-jitter`），避免瞬间冲击 ACS
+- BOOTSTRAP Inform 阶梯式分批启动（`boot-batch-size` + `boot-batch-delay` + `boot-jitter`），避免瞬间冲击 ACS
 - Inform 调度随机抖动，避免惊群效应
 
 ## 运行时交互

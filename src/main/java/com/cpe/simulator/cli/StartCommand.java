@@ -4,8 +4,11 @@ import com.cpe.simulator.common.AppConfig;
 import com.cpe.simulator.common.ConfigLoader;
 import com.cpe.simulator.common.SimLogger;
 import com.cpe.simulator.engine.SimulationEngine;
+import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
+import picocli.CommandLine.Model.CommandSpec;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -18,7 +21,7 @@ public class StartCommand implements Runnable {
     @Option(names = {"--count", "-c"}, description = "Number of CPE instances", defaultValue = "100")
     int count;
 
-    @Option(names = {"--acs-url"}, description = "ACS URL", required = true)
+    @Option(names = {"--acs-url"}, description = "ACS URL")
     String acsUrl;
 
     @Option(names = {"--acs-user"}, description = "ACS username")
@@ -42,11 +45,23 @@ public class StartCommand implements Runnable {
     @Option(names = {"--serial-start"}, description = "Serial number start index", defaultValue = "0")
     int serialStart;
 
-    @Option(names = {"--inform-interval"}, description = "Inform interval in seconds", defaultValue = "300")
+    @Option(names = {"--inform-interval", "--periodic-inform-interval"}, description = "PERIODIC inform interval in seconds", defaultValue = "300")
     int informInterval;
 
-    @Option(names = {"--inform-jitter"}, description = "Inform jitter ratio (0.0-1.0)", defaultValue = "0.3")
+    @Option(names = {"--inform-jitter", "--periodic-inform-initial-jitter"}, description = "PERIODIC inform initial jitter ratio (0.0-1.0)", defaultValue = "0.3")
     double informJitter;
+
+    @Option(names = {"--bootstrap-inform-interval"}, description = "BOOTSTRAP inform interval in seconds")
+    Integer bootstrapInformInterval;
+
+    @Option(names = {"--bootstrap-inform-initial-jitter"}, description = "BOOTSTRAP inform initial jitter ratio (0.0-1.0)")
+    Double bootstrapInformInitialJitter;
+
+    @Option(names = {"--boot-inform-interval"}, description = "Scheduled BOOT inform interval in seconds")
+    Integer bootInformInterval;
+
+    @Option(names = {"--boot-inform-initial-jitter"}, description = "Scheduled BOOT inform initial jitter ratio (0.0-1.0)")
+    Double bootInformInitialJitter;
 
     @Option(names = {"--max-sessions"}, description = "Max concurrent CWMP sessions", defaultValue = "1000")
     int maxSessions;
@@ -57,13 +72,13 @@ public class StartCommand implements Runnable {
     @Option(names = {"--connect-batch-delay"}, description = "Batch delay in ms", defaultValue = "200")
     int connectBatchDelay;
 
-    @Option(names = {"--boot-batch-size"}, description = "BOOT inform batch size", defaultValue = "100")
+    @Option(names = {"--boot-batch-size"}, description = "Startup BOOTSTRAP inform batch size", defaultValue = "100")
     int bootBatchSize;
 
-    @Option(names = {"--boot-batch-delay"}, description = "BOOT batch delay in ms", defaultValue = "1000")
+    @Option(names = {"--boot-batch-delay"}, description = "Startup BOOTSTRAP batch delay in ms", defaultValue = "1000")
     int bootBatchDelay;
 
-    @Option(names = {"--boot-jitter"}, description = "BOOT inform jitter ratio (0.0-1.0)", defaultValue = "0.5")
+    @Option(names = {"--boot-jitter"}, description = "Startup BOOTSTRAP inform jitter ratio (0.0-1.0)", defaultValue = "0.5")
     double bootJitter;
 
     @Option(names = {"--conn-req-host"}, description = "Connection request listen host", defaultValue = "0.0.0.0")
@@ -114,14 +129,14 @@ public class StartCommand implements Runnable {
     @Option(names = {"--config"}, description = "Config file path")
     String configPath;
 
-    @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer, BOOT inform, and periodic reports")
+    @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer, startup BOOTSTRAP inform, and scheduled reports")
     boolean xmppOnly;
-
-    @Option(names = {"--no-periodic"}, description = "Disable periodic inform reports")
-    boolean noPeriodic;
 
     @Option(names = {"--socket-path"}, description = "UDS socket path (default: platform-specific)")
     String socketPath;
+
+    @Spec
+    CommandSpec commandSpec;
 
     public String validateNatMode() {
         if (xmppOnly && !"nat".equalsIgnoreCase(mode)) {
@@ -143,12 +158,6 @@ public class StartCommand implements Runnable {
 
     @Override
     public void run() {
-        String validationError = validateNatMode();
-        if (validationError != null) {
-            System.err.println("Error: " + validationError);
-            System.exit(1);
-        }
-
         AppConfig config;
         try {
             config = ConfigLoader.load(configPath);
@@ -159,6 +168,18 @@ public class StartCommand implements Runnable {
         }
 
         applyCliOverrides(config);
+
+        String validationError = validateNatMode(config);
+        if (validationError == null) {
+            try {
+                config.validateInformSchedules();
+            } catch (IllegalArgumentException e) {
+                validationError = e.getMessage();
+            }
+        }
+        if (validationError != null) {
+            throw new CommandLine.ParameterException(commandSpec.commandLine(), validationError);
+        }
 
         ProgressBar progressBar = new ProgressBar();
         progressBar.update("Loading config", 1, 4);
@@ -220,45 +241,78 @@ public class StartCommand implements Runnable {
         }
     }
 
-    private void applyCliOverrides(AppConfig config) {
-        config.setMode(mode);
-        config.setCount(count);
-        config.setAcsUrl(acsUrl);
-        if (acsUser != null) config.setAcsUser(acsUser);
-        if (acsPassword != null) config.setAcsPassword(acsPassword);
-        config.setModel(model);
-        config.setOui(oui);
-        config.setProductClass(productClass);
-        config.setSerialPrefix(serialPrefix);
-        config.setSerialStart(serialStart);
-        config.setInformInterval(informInterval);
-        config.setInformJitter(informJitter);
-        config.setMaxSessions(maxSessions);
-        config.setConnectBatch(connectBatch);
-        config.setConnectBatchDelay(connectBatchDelay);
-        config.setBootBatchSize(bootBatchSize);
-        config.setBootBatchDelay(bootBatchDelay);
-        config.setBootJitter(bootJitter);
-        config.setConnReqHost(connReqHost);
-        config.setConnReqPort(connReqPort);
-        if (connReqUser != null) config.setConnReqUser(connReqUser);
-        if (connReqPassword != null) config.setConnReqPassword(connReqPassword);
-        config.setRebootDelay(rebootDelay);
-        config.setDownloadDelay(downloadDelay);
-        config.setDownloadSuccessRate(downloadSuccessRate);
-        config.setXmppOnly(xmppOnly);
-        config.setNoPeriodic(noPeriodic);
+    void applyCliOverrides(AppConfig config) {
+        if (wasSpecified("--mode")) config.setMode(mode);
+        if (wasSpecified("--count")) config.setCount(count);
+        if (wasSpecified("--acs-url")) config.setAcsUrl(acsUrl);
+        if (wasSpecified("--acs-user")) config.setAcsUser(acsUser);
+        if (wasSpecified("--acs-password")) config.setAcsPassword(acsPassword);
+        if (wasSpecified("--model")) config.setModel(model);
+        if (wasSpecified("--oui")) config.setOui(oui);
+        if (wasSpecified("--product-class")) config.setProductClass(productClass);
+        if (wasSpecified("--serial-prefix")) config.setSerialPrefix(serialPrefix);
+        if (wasSpecified("--serial-start")) config.setSerialStart(serialStart);
+        if (wasSpecified("--inform-interval", "--periodic-inform-interval")) config.setInformInterval(informInterval);
+        if (wasSpecified("--inform-jitter", "--periodic-inform-initial-jitter")) config.setInformJitter(informJitter);
+        if (wasSpecified("--max-sessions")) config.setMaxSessions(maxSessions);
+        if (wasSpecified("--connect-batch")) config.setConnectBatch(connectBatch);
+        if (wasSpecified("--connect-batch-delay")) config.setConnectBatchDelay(connectBatchDelay);
+        if (wasSpecified("--boot-batch-size")) config.setBootBatchSize(bootBatchSize);
+        if (wasSpecified("--boot-batch-delay")) config.setBootBatchDelay(bootBatchDelay);
+        if (wasSpecified("--boot-jitter")) config.setBootJitter(bootJitter);
+        if (wasSpecified("--conn-req-host")) config.setConnReqHost(connReqHost);
+        if (wasSpecified("--conn-req-port")) config.setConnReqPort(connReqPort);
+        if (wasSpecified("--conn-req-user")) config.setConnReqUser(connReqUser);
+        if (wasSpecified("--conn-req-password")) config.setConnReqPassword(connReqPassword);
+        if (wasSpecified("--reboot-delay")) config.setRebootDelay(rebootDelay);
+        if (wasSpecified("--download-delay")) config.setDownloadDelay(downloadDelay);
+        if (wasSpecified("--download-success-rate")) config.setDownloadSuccessRate(downloadSuccessRate);
+        if (wasSpecified("--xmpp-only")) config.setXmppOnly(xmppOnly);
+
+        AppConfig.InformSchedules schedules = config.getInformSchedules();
+        if (wasSpecified("--bootstrap-inform-interval")) schedules.getBootstrap().setInterval(bootstrapInformInterval);
+        if (wasSpecified("--bootstrap-inform-initial-jitter")) schedules.getBootstrap().setInitialJitter(bootstrapInformInitialJitter);
+        if (wasSpecified("--boot-inform-interval")) schedules.getBoot().setInterval(bootInformInterval);
+        if (wasSpecified("--boot-inform-initial-jitter")) schedules.getBoot().setInitialJitter(bootInformInitialJitter);
 
         AppConfig.XmppConfig xmpp = config.getXmpp();
-        if (xmppHost != null) xmpp.setHost(xmppHost);
-        if (xmppPort != null) xmpp.setPort(xmppPort);
-        if (xmppDomain != null) xmpp.setDomain(xmppDomain);
-        if (xmppPassword != null) xmpp.setPassword(xmppPassword);
-        xmpp.setUserPrefix(xmppUserPrefix);
-        xmpp.setResource(xmppResource);
-        if (xmppTlsMode != null) {
-            xmpp.setTlsMode(xmppTlsMode);
+        if (wasSpecified("--xmpp-host")) xmpp.setHost(xmppHost);
+        if (wasSpecified("--xmpp-port")) xmpp.setPort(xmppPort);
+        if (wasSpecified("--xmpp-domain")) xmpp.setDomain(xmppDomain);
+        if (wasSpecified("--xmpp-password")) xmpp.setPassword(xmppPassword);
+        if (wasSpecified("--xmpp-user-prefix")) xmpp.setUserPrefix(xmppUserPrefix);
+        if (wasSpecified("--xmpp-resource")) xmpp.setResource(xmppResource);
+        if (wasSpecified("--xmpp-tls-mode")) xmpp.setTlsMode(xmppTlsMode);
+        if (wasSpecified("--xmpp-sasl-mechanism")) xmpp.setSaslMechanism(xmppSaslMechanism);
+    }
+
+    private boolean wasSpecified(String... optionNames) {
+        if (commandSpec == null || commandSpec.commandLine().getParseResult() == null) {
+            return true;
         }
-        if (xmppSaslMechanism != null) xmpp.setSaslMechanism(xmppSaslMechanism);
+        for (String optionName : optionNames) {
+            if (commandSpec.commandLine().getParseResult().hasMatchedOption(optionName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String validateNatMode(AppConfig config) {
+        if (config.isXmppOnly() && !config.isNatMode()) {
+            return "--xmpp-only is only available in NAT mode";
+        }
+        if (config.isNatMode()) {
+            if (config.getXmpp().getHost() == null || config.getXmpp().getHost().isEmpty()) {
+                return "--xmpp-host is required in NAT mode";
+            }
+            if (config.getXmpp().getDomain() == null || config.getXmpp().getDomain().isEmpty()) {
+                return "--xmpp-domain is required in NAT mode";
+            }
+            if (config.getXmpp().getPassword() == null || config.getXmpp().getPassword().isEmpty()) {
+                return "--xmpp-password is required in NAT mode";
+            }
+        }
+        return null;
     }
 }

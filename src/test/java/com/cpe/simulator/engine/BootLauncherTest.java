@@ -9,6 +9,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class BootLauncherTest {
 
@@ -75,6 +77,23 @@ class BootLauncherTest {
         assertEquals(100, config.getBootBatchSize());
         assertEquals(1000, config.getBootBatchDelay());
         assertEquals(0.5, config.getBootJitter());
+    }
+
+    @Test
+    void normalStartupTriggersBootstrapEvent() {
+        AppConfig config = new AppConfig();
+        config.setBootBatchSize(1);
+        config.setBootBatchDelay(0);
+        config.setBootJitter(0.0);
+        CpeDevice device = mock(CpeDevice.class);
+
+        BootLauncher launcher = new BootLauncher(config);
+        try {
+            launcher.launchBoot(List.of(device)).join();
+            verify(device).triggerInform("0 BOOTSTRAP");
+        } finally {
+            launcher.shutdown();
+        }
     }
 
     private List<CpeDevice> createMockDevices(int count) {

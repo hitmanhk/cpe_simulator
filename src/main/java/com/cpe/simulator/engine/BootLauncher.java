@@ -43,16 +43,16 @@ public class BootLauncher {
                         if (deviceDelay > 0) {
                             scheduler.schedule(() -> {
                                 try {
-                                    device.triggerInform("1 BOOT");
+                                    device.triggerInform("0 BOOTSTRAP");
                                 } catch (Exception e) {
-                                    SimLogger.error("BOOT inform failed for device " + device.getDeviceId(), e);
+                                    SimLogger.error("BOOTSTRAP inform failed for device " + device.getDeviceId(), e);
                                 }
                             }, deviceDelay, TimeUnit.MILLISECONDS);
                         } else {
                             try {
-                                device.triggerInform("1 BOOT");
+                                device.triggerInform("0 BOOTSTRAP");
                             } catch (Exception e) {
-                                SimLogger.error("BOOT inform failed for device " + device.getDeviceId(), e);
+                                SimLogger.error("BOOTSTRAP inform failed for device " + device.getDeviceId(), e);
                             }
                         }
                     }

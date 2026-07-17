@@ -10,8 +10,16 @@ simulator:
   product-class: SimCPE
   serial-prefix: SIM
 
-  inform-interval: 300
-  inform-jitter: 0.3
+  inform-schedules:
+    bootstrap:
+      interval: 86400
+      initial-jitter: 0.2
+    boot:
+      interval: 3600
+      initial-jitter: 0.2
+    periodic:
+      interval: 300
+      initial-jitter: 0.3
   max-sessions: 1000
 
   connect-batch: 1000

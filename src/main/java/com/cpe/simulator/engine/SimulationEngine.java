@@ -56,6 +56,7 @@ public class SimulationEngine {
 
     public void start() throws Exception {
         SimLogger.info("Starting simulation engine");
+        config.validateInformSchedules();
 
         templateModel = ModelLoader.load(config.getModel());
 
@@ -153,9 +154,9 @@ public class SimulationEngine {
             bootLauncher.launchBoot(devices).join();
         }
 
-        if (!config.isXmppOnly() && !config.isNoPeriodic()) {
+        if (!config.isXmppOnly() && config.getInformSchedules().hasEnabledSchedule()) {
             for (CpeDevice device : devices) {
-                informScheduler.schedulePeriodicInform(device);
+                informScheduler.scheduleConfiguredInforms(device);
             }
         }
 

@@ -12,6 +12,7 @@ import com.cpe.simulator.xmpp.XmppEngine;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ public class CpeDevice implements DeviceContext {
     private volatile Instant lastInformTime;
     private final AtomicLong informCount;
     private final AtomicBoolean sessionActive;
+    private final ConcurrentLinkedQueue<PendingInform> pendingInforms;
     private final List<CwmpSession.PendingTransfer> pendingTransfers;
     private final ScheduledExecutorService scheduler;
     private final Semaphore sessionSemaphore;
@@ -66,6 +68,7 @@ public class CpeDevice implements DeviceContext {
         this.state = DeviceState.CREATED;
         this.informCount = new AtomicLong(0);
         this.sessionActive = new AtomicBoolean(false);
+        this.pendingInforms = new ConcurrentLinkedQueue<>();
         this.pendingTransfers = new ArrayList<>();
         this.informHandler = new InformHandler();
         this.soapBuilder = new SoapBuilder();
@@ -89,6 +92,7 @@ public class CpeDevice implements DeviceContext {
             xmppConnection.disconnect();
         }
         this.state = DeviceState.OFFLINE;
+        pendingInforms.clear();
         SimLogger.device(deviceId, "Device disconnected");
     }
 
@@ -101,19 +105,42 @@ public class CpeDevice implements DeviceContext {
             SimLogger.device(deviceId, "Cannot trigger inform, device state: {}", state);
             return;
         }
+        pendingInforms.add(new PendingInform(eventCode, commandKey != null ? commandKey : ""));
+        startInformDrain();
+    }
+
+    private void startInformDrain() {
         if (!sessionActive.compareAndSet(false, true)) {
             return;
         }
-        scheduler.execute(() -> {
-            try {
-                runInformSession(eventCode, commandKey);
-            } catch (Exception e) {
-                SimLogger.error("Inform session failed for device " + deviceId, e);
-            } finally {
-                sessionActive.set(false);
-            }
-        });
+        try {
+            scheduler.execute(this::drainPendingInforms);
+        } catch (RuntimeException e) {
+            sessionActive.set(false);
+            throw e;
+        }
     }
+
+    private void drainPendingInforms() {
+        try {
+            PendingInform pending;
+            while (state != DeviceState.OFFLINE && (pending = pendingInforms.poll()) != null) {
+                runInformSession(pending.eventCode(), pending.commandKey());
+            }
+            if (state == DeviceState.OFFLINE) {
+                pendingInforms.clear();
+            }
+        } catch (Exception e) {
+            SimLogger.error("Inform session failed for device " + deviceId, e);
+        } finally {
+            sessionActive.set(false);
+            if (state != DeviceState.OFFLINE && !pendingInforms.isEmpty()) {
+                startInformDrain();
+            }
+        }
+    }
+
+    private record PendingInform(String eventCode, String commandKey) {}
 
     public void runInformSession() {
         runInformSession("2 PERIODIC", "");
