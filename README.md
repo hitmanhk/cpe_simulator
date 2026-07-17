@@ -54,7 +54,7 @@ java -jar target/cpe-simulator.jar start \
   --acs-url http://acs.example.com:7547/
 ```
 
-公网和 NAT 普通模式启动时，每台设备会先发送一次 `0 BOOTSTRAP`。`--xmpp-only` 模式不发送启动或周期 CWMP Inform。
+公网和 NAT 普通模式启动时，每台设备会先发送一次 `0 BOOTSTRAP`。`--xmpp-only` 模式不发送启动 BOOTSTRAP，但会在每台设备 XMPP 建联成功后启动该设备的周期 CWMP Inform。
 
 ### 使用配置文件启动
 
@@ -122,7 +122,7 @@ cpe-sim start [选项]
 | `--xmpp-resource <res>` | XMPP 资源名 | `sim` |
 | `--xmpp-tls-mode <NONE\|DIRECT\|STARTTLS>` | XMPP TLS 建立模式 | `NONE` |
 | `--xmpp-sasl-mechanism <name>` | SASL 认证机制 | `SCRAM-SHA-1` |
-| `--xmpp-only` | 仅 XMPP 模式（跳过 CwmpServer、启动 BOOTSTRAP 和周期 Inform） | `false` |
+| `--xmpp-only` | XMPP 建联模式（跳过 CwmpServer 和启动 BOOTSTRAP，建联后启动周期 Inform） | `false` |
 | `--reboot-delay <seconds>` | 模拟重启延迟 | `5` |
 | `--download-delay <seconds>` | 模拟下载延迟 | `10` |
 | `--download-success-rate <rate>` | 下载成功率（0.0-1.0） | `0.99` |
@@ -206,7 +206,7 @@ simulator:
   conn-req-user: ""               # 回连认证用户名（可选）
   conn-req-password: ""           # 回连认证密码（可选）
   session-timeout: 30             # CWMP 会话超时（秒）
-  xmpp-only: false                # 仅 XMPP 模式（跳过 CwmpServer 和定时 Inform）
+  xmpp-only: false                # true 时在每台设备 XMPP ONLINE 后启动周期 Inform
   reboot-delay: 5                 # 模拟重启延迟（秒）
   download-delay: 10              # 模拟下载延迟（秒）
   download-success-rate: 0.99     # 下载成功率

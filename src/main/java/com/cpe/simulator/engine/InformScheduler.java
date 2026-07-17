@@ -21,6 +21,12 @@ public class InformScheduler {
         this.scheduledTasks = new ConcurrentHashMap<>();
     }
 
+    InformScheduler(AppConfig config, ScheduledExecutorService scheduler) {
+        this.config = config;
+        this.scheduler = scheduler;
+        this.scheduledTasks = new ConcurrentHashMap<>();
+    }
+
     public void schedulePeriodicInform(CpeDevice device) {
         scheduleInform(device, "2 PERIODIC", config.getInformSchedules().getPeriodic());
     }
@@ -33,7 +39,7 @@ public class InformScheduler {
     }
 
     private void scheduleInform(CpeDevice device, String eventCode, AppConfig.InformSchedule schedule) {
-        if (schedule.getInterval() == 0) {
+        if (schedule.getInterval() == 0 || scheduler.isShutdown()) {
             return;
         }
 
@@ -51,10 +57,13 @@ public class InformScheduler {
         long initialDelay = computeJitteredInterval(interval, initialJitter);
         long period = interval;
 
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(
-            task, initialDelay, period, TimeUnit.SECONDS
-        );
-        scheduledTasks.put(taskKey(device.getDeviceId(), eventCode), future);
+        try {
+            scheduledTasks.computeIfAbsent(taskKey(device.getDeviceId(), eventCode), key ->
+                scheduler.scheduleAtFixedRate(task, initialDelay, period, TimeUnit.SECONDS)
+            );
+        } catch (RejectedExecutionException ignored) {
+            // Engine shutdown raced with an XMPP ONLINE notification.
+        }
     }
 
     public void cancelScheduledInform(String deviceId) {

@@ -74,33 +74,26 @@ class StartupModeTest {
     }
 
     @Test
-    void testXmppOnlySkipsScheduledInformBehavior() {
+    void testXmppOnlyKeepsScheduledInformConfiguration() {
         AppConfig config = new AppConfig();
         config.setMode("nat");
         config.setXmppOnly(true);
 
         assertTrue(config.isXmppOnly());
         assertTrue(config.getInformSchedules().hasEnabledSchedule());
-
-        boolean shouldSkipScheduledInforms = config.isXmppOnly();
-        assertTrue(shouldSkipScheduledInforms);
     }
 
     @Test
-    void testScheduledInformCondition() {
+    void testNormalModeSchedulesAfterStartupAndXmppOnlyWaitsForOnline() {
         AppConfig xmppOnly = new AppConfig();
         xmppOnly.setXmppOnly(true);
-        assertFalse(!xmppOnly.isXmppOnly() && xmppOnly.getInformSchedules().hasEnabledSchedule());
+        assertTrue(xmppOnly.isXmppOnly() && xmppOnly.getInformSchedules().hasEnabledSchedule());
 
         AppConfig allDisabled = new AppConfig();
         allDisabled.getInformSchedules().getBootstrap().setInterval(0);
         allDisabled.getInformSchedules().getBoot().setInterval(0);
         allDisabled.getInformSchedules().getPeriodic().setInterval(0);
         assertFalse(!allDisabled.isXmppOnly() && allDisabled.getInformSchedules().hasEnabledSchedule());
-
-        AppConfig both = new AppConfig();
-        both.setXmppOnly(true);
-        assertFalse(!both.isXmppOnly() && both.getInformSchedules().hasEnabledSchedule());
 
         AppConfig normal = new AppConfig();
         assertTrue(!normal.isXmppOnly() && normal.getInformSchedules().hasEnabledSchedule());

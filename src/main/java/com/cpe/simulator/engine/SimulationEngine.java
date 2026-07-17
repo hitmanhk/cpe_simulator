@@ -72,6 +72,9 @@ public class SimulationEngine {
             deviceRegistry.register(device.getDeviceId(), device);
         }
 
+        informScheduler = new InformScheduler(config);
+        scheduler = Executors.newScheduledThreadPool(2, Thread.ofVirtual().factory());
+
         if (!config.isXmppOnly()) {
             cwmpServer = new CwmpServer(config, deviceId -> {
                 CpeDevice device = (CpeDevice) deviceRegistry.getDevice(deviceId);
@@ -118,17 +121,8 @@ public class SimulationEngine {
                 for (CpeDevice device : devices) {
                     XmppConnection conn = xmppEngine.createConnection(
                         device.getDeviceId(), device.getSerialNumber());
-                    conn.onStateChange(xmppState -> {
-                        switch (xmppState) {
-                            case ONLINE -> device.setState(CpeDevice.DeviceState.ONLINE);
-                            case FAILED -> {
-                                device.setState(CpeDevice.DeviceState.OFFLINE);
-                                SimLogger.error("XMPP connection failed for device {}", device.getDeviceId());
-                            }
-                            case DISCONNECTED -> device.setState(CpeDevice.DeviceState.OFFLINE);
-                            default -> {}
-                        }
-                    });
+                    XmppOnlyInformBridge stateBridge = new XmppOnlyInformBridge(device, informScheduler);
+                    conn.onStateChange(stateBridge::onStateChange);
                     device.setXmppConnection(conn);
                     xmppConnections.add(conn);
                 }
@@ -142,9 +136,6 @@ public class SimulationEngine {
                 SimLogger.info("XMPP engine started, waiting for ACS to provision XMPP credentials");
             }
         }
-
-        informScheduler = new InformScheduler(config);
-        scheduler = Executors.newScheduledThreadPool(2, Thread.ofVirtual().factory());
 
         if (!config.isXmppOnly()) {
             batchConnector = new BatchConnector(config);

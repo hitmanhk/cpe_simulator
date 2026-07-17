@@ -129,7 +129,7 @@ public class StartCommand implements Runnable {
     @Option(names = {"--config"}, description = "Config file path")
     String configPath;
 
-    @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer, startup BOOTSTRAP inform, and scheduled reports")
+    @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer and startup BOOTSTRAP; start scheduled reports after XMPP is online")
     boolean xmppOnly;
 
     @Option(names = {"--socket-path"}, description = "UDS socket path (default: platform-specific)")

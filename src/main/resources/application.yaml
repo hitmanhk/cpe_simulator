@@ -21,6 +21,7 @@ simulator:
       interval: 300
       initial-jitter: 0.3
   max-sessions: 1000
+  xmpp-only: false  # true 时在每台设备 XMPP ONLINE 后启动周期 Inform
 
   connect-batch: 1000
   connect-batch-delay: 200
