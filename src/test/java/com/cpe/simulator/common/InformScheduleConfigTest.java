@@ -35,23 +35,8 @@ class InformScheduleConfigTest {
 
         assertEquals(86400, config.getInformSchedules().getBootstrap().getInterval());
         assertEquals(0, config.getInformSchedules().getBoot().getInterval());
-        assertEquals(120, config.getInformInterval());
-        assertEquals(0.8, config.getInformJitter(), 0.001);
-    }
-
-    @Test
-    void keepsLegacyPeriodicConfigurationCompatible() throws Exception {
-        Path configFile = tempDir.resolve("legacy.yaml");
-        Files.writeString(configFile, """
-            simulator:
-              inform-interval: 600
-              inform-jitter: 0.5
-            """);
-
-        AppConfig config = ConfigLoader.load(configFile.toString());
-
-        assertEquals(600, config.getInformSchedules().getPeriodic().getInterval());
-        assertEquals(0.5, config.getInformSchedules().getPeriodic().getInitialJitter(), 0.001);
+        assertEquals(120, config.getInformSchedules().getPeriodic().getInterval());
+        assertEquals(0.8, config.getInformSchedules().getPeriodic().getInitialJitter(), 0.001);
     }
 
     @Test

@@ -55,7 +55,7 @@ class StartupModeTest {
     @Test
     void testZeroPeriodicIntervalDisablesSchedule() {
         AppConfig config = new AppConfig();
-        config.setInformInterval(0);
+        config.getInformSchedules().getPeriodic().setInterval(0);
 
         assertEquals(0, config.getInformSchedules().getPeriodic().getInterval());
         assertDoesNotThrow(config::validateInformSchedules);

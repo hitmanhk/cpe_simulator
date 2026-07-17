@@ -111,7 +111,7 @@ class CliCommandTest {
             "--oui", "AABBCC",
             "--product-class", "TestDevice",
             "--serial-prefix", "TST",
-            "--inform-interval", "600",
+            "--periodic-inform-interval", "600",
             "--max-sessions", "500"
         );
 
@@ -150,15 +150,15 @@ class CliCommandTest {
 
         AppConfig config = new AppConfig();
         config.setCount(777);
-        config.setInformInterval(120);
+        config.getInformSchedules().getPeriodic().setInterval(120);
         config.getInformSchedules().getBootstrap().setInterval(0);
 
         cmd.applyCliOverrides(config);
 
         assertEquals("http://cli.example.com:7547/", config.getAcsUrl());
         assertEquals(777, config.getCount());
-        assertEquals(120, config.getInformInterval());
-        assertEquals(0.9, config.getInformJitter(), 0.001);
+        assertEquals(120, config.getInformSchedules().getPeriodic().getInterval());
+        assertEquals(0.9, config.getInformSchedules().getPeriodic().getInitialJitter(), 0.001);
         assertEquals(7200, config.getInformSchedules().getBootstrap().getInterval());
     }
 

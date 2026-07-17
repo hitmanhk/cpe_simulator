@@ -73,8 +73,8 @@ class PublicModeIntegrationTest {
         config.setConnReqHost("127.0.0.1");
         config.setConnReqPort(connReqPort);
         config.setMaxSessions(10);
-        config.setInformInterval(3600);
-        config.setInformJitter(0.0);
+        config.getInformSchedules().getPeriodic().setInterval(3600);
+        config.getInformSchedules().getPeriodic().setInitialJitter(0.0);
         config.setSessionTimeout(30);
         config.setConnectBatch(1000);
         config.setConnectBatchDelay(0);
@@ -120,8 +120,8 @@ class PublicModeIntegrationTest {
         config.setConnReqHost("127.0.0.1");
         config.setConnReqPort(connReqPort);
         config.setMaxSessions(10);
-        config.setInformInterval(3600);
-        config.setInformJitter(0.0);
+        config.getInformSchedules().getPeriodic().setInterval(3600);
+        config.getInformSchedules().getPeriodic().setInitialJitter(0.0);
         config.setSessionTimeout(30);
         config.setConnectBatch(1000);
         config.setConnectBatchDelay(0);

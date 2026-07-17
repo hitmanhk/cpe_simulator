@@ -111,14 +111,6 @@ public class AppConfig {
     public void setSerialPrefix(String serialPrefix) { this.serialPrefix = serialPrefix; }
     public int getSerialStart() { return serialStart; }
     public void setSerialStart(int serialStart) { this.serialStart = serialStart; }
-    @JsonProperty("inform-interval")
-    public int getInformInterval() { return informSchedules.getPeriodic().getInterval(); }
-    @JsonProperty("inform-interval")
-    public void setInformInterval(int informInterval) { informSchedules.getPeriodic().setInterval(informInterval); }
-    @JsonProperty("inform-jitter")
-    public double getInformJitter() { return informSchedules.getPeriodic().getInitialJitter(); }
-    @JsonProperty("inform-jitter")
-    public void setInformJitter(double informJitter) { informSchedules.getPeriodic().setInitialJitter(informJitter); }
     public int getMaxSessions() { return maxSessions; }
     public void setMaxSessions(int maxSessions) { this.maxSessions = maxSessions; }
     public int getConnectBatch() { return connectBatch; }

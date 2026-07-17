@@ -96,8 +96,6 @@ cpe-sim start [选项]
 | `--oui <OUI>` | OUI 前缀 | `000000` |
 | `--product-class <class>` | 产品类别 | `SimCPE` |
 | `--serial-prefix <prefix>` | 序列号前缀 | `SIM` |
-| `--inform-interval <seconds>` | `2 PERIODIC` 上报周期（兼容参数） | `300` |
-| `--inform-jitter <ratio>` | `2 PERIODIC` 首次调度抖动（兼容参数） | `0.3` |
 | `--bootstrap-inform-interval <seconds>` | `0 BOOTSTRAP` 上报周期 | YAML 配置 |
 | `--bootstrap-inform-initial-jitter <ratio>` | `0 BOOTSTRAP` 首次调度抖动 | YAML 配置 |
 | `--boot-inform-interval <seconds>` | 周期性 `1 BOOT` 上报周期 | YAML 配置 |

@@ -45,10 +45,10 @@ public class StartCommand implements Runnable {
     @Option(names = {"--serial-start"}, description = "Serial number start index", defaultValue = "0")
     int serialStart;
 
-    @Option(names = {"--inform-interval", "--periodic-inform-interval"}, description = "PERIODIC inform interval in seconds", defaultValue = "300")
+    @Option(names = {"--periodic-inform-interval"}, description = "PERIODIC inform interval in seconds", defaultValue = "300")
     int informInterval;
 
-    @Option(names = {"--inform-jitter", "--periodic-inform-initial-jitter"}, description = "PERIODIC inform initial jitter ratio (0.0-1.0)", defaultValue = "0.3")
+    @Option(names = {"--periodic-inform-initial-jitter"}, description = "PERIODIC inform initial jitter ratio (0.0-1.0)", defaultValue = "0.3")
     double informJitter;
 
     @Option(names = {"--bootstrap-inform-interval"}, description = "BOOTSTRAP inform interval in seconds")
@@ -252,8 +252,6 @@ public class StartCommand implements Runnable {
         if (wasSpecified("--product-class")) config.setProductClass(productClass);
         if (wasSpecified("--serial-prefix")) config.setSerialPrefix(serialPrefix);
         if (wasSpecified("--serial-start")) config.setSerialStart(serialStart);
-        if (wasSpecified("--inform-interval", "--periodic-inform-interval")) config.setInformInterval(informInterval);
-        if (wasSpecified("--inform-jitter", "--periodic-inform-initial-jitter")) config.setInformJitter(informJitter);
         if (wasSpecified("--max-sessions")) config.setMaxSessions(maxSessions);
         if (wasSpecified("--connect-batch")) config.setConnectBatch(connectBatch);
         if (wasSpecified("--connect-batch-delay")) config.setConnectBatchDelay(connectBatchDelay);
@@ -270,6 +268,8 @@ public class StartCommand implements Runnable {
         if (wasSpecified("--xmpp-only")) config.setXmppOnly(xmppOnly);
 
         AppConfig.InformSchedules schedules = config.getInformSchedules();
+        if (wasSpecified("--periodic-inform-interval")) schedules.getPeriodic().setInterval(informInterval);
+        if (wasSpecified("--periodic-inform-initial-jitter")) schedules.getPeriodic().setInitialJitter(informJitter);
         if (wasSpecified("--bootstrap-inform-interval")) schedules.getBootstrap().setInterval(bootstrapInformInterval);
         if (wasSpecified("--bootstrap-inform-initial-jitter")) schedules.getBootstrap().setInitialJitter(bootstrapInformInitialJitter);
         if (wasSpecified("--boot-inform-interval")) schedules.getBoot().setInterval(bootInformInterval);
