@@ -37,6 +37,33 @@ public class SimLogger {
         }
     }
 
+    /**
+     * Records a connection state transition. Connection state is operationally
+     * important, so it is emitted at INFO even when verbose device logging is off.
+     */
+    public static void connectionState(String deviceId, String connectionType,
+                                       Object previousState, Object currentState, String reason) {
+        if (!deviceFilter.isEmpty() && !deviceFilter.contains(deviceId)) {
+            return;
+        }
+        LOG.info("[{}] Connection state changed: type={} previous={} current={} reason={}",
+            deviceId, connectionType, previousState, currentState, reason);
+    }
+
+    /**
+     * Records TR-069 RPC metadata without logging the SOAP payload, which may
+     * contain credentials or parameter values.
+     */
+    public static void cwmpRpc(String deviceId, String sessionId, String direction,
+                               String method, String status, String details) {
+        if (!deviceFilter.isEmpty() && !deviceFilter.contains(deviceId)) {
+            return;
+        }
+        LOG.info("[{}] TR-069 RPC: session={} direction={} method={} status={} details={}",
+            deviceId, sessionId, direction, method, status,
+            details == null || details.isBlank() ? "-" : details);
+    }
+
     public static void info(String message, Object... args) {
         LOG.info(message, args);
     }

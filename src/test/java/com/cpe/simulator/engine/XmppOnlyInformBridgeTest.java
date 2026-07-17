@@ -15,7 +15,7 @@ class XmppOnlyInformBridgeTest {
 
         bridge.onStateChange(XmppConnection.ConnectionState.ONLINE);
 
-        verify(device).setState(CpeDevice.DeviceState.ONLINE);
+        verify(device).transitionState(CpeDevice.DeviceState.ONLINE, "XMPP connected");
         verify(scheduler).scheduleConfiguredInforms(device);
     }
 
@@ -28,18 +28,19 @@ class XmppOnlyInformBridgeTest {
 
         bridge.onStateChange(XmppConnection.ConnectionState.DISCONNECTED);
 
-        verify(device).setState(CpeDevice.DeviceState.OFFLINE);
+        verify(device).transitionState(CpeDevice.DeviceState.OFFLINE, "XMPP disconnected");
         verify(scheduler).cancelScheduledInform("device-1");
     }
 
     @Test
-    void intermediateStatesDoNotStartScheduledInforms() {
+    void intermediateStatesMarkDeviceAsConnectingWithoutStartingInforms() {
         CpeDevice device = mock(CpeDevice.class);
         InformScheduler scheduler = mock(InformScheduler.class);
         XmppOnlyInformBridge bridge = new XmppOnlyInformBridge(device, scheduler);
 
         bridge.onStateChange(XmppConnection.ConnectionState.AUTHENTICATING);
 
-        verifyNoInteractions(device, scheduler);
+        verify(device).transitionState(CpeDevice.DeviceState.CONNECTING, "XMPP state=AUTHENTICATING");
+        verifyNoInteractions(scheduler);
     }
 }

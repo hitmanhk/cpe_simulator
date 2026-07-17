@@ -12,6 +12,7 @@ import com.cpe.simulator.xmpp.XmppEngine;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
@@ -76,14 +77,13 @@ public class CpeDevice implements DeviceContext {
     }
 
     public void initialize() {
-        this.state = DeviceState.CREATED;
+        transitionState(DeviceState.CREATED, "device initialized");
     }
 
     public void connect() {
-        this.state = DeviceState.CONNECTING;
+        transitionState(DeviceState.CONNECTING, "connection requested");
         if (!config.isNatMode()) {
-            this.state = DeviceState.ONLINE;
-            SimLogger.device(deviceId, "Device online (public mode)");
+            transitionState(DeviceState.ONLINE, "public mode ready");
         }
     }
 
@@ -91,9 +91,8 @@ public class CpeDevice implements DeviceContext {
         if (xmppConnection != null) {
             xmppConnection.disconnect();
         }
-        this.state = DeviceState.OFFLINE;
+        transitionState(DeviceState.OFFLINE, "disconnect requested");
         pendingInforms.clear();
-        SimLogger.device(deviceId, "Device disconnected");
     }
 
     public void triggerInform(String eventCode) {
@@ -161,24 +160,34 @@ public class CpeDevice implements DeviceContext {
 
             session.startSession(events);
             sessionId = session.getSessionId();
+            String activeSessionId = sessionId;
 
             String informXml = informHandler.buildInform(this, eventCode, commandKey);
 
-            CwmpClient.CwmpResponse response = cwmpClient.sendInform(sessionId, informXml);
+            CwmpClient.CwmpResponse response = sendCwmpRpc(
+                activeSessionId, "Inform", "eventCode=" + eventCode,
+                () -> cwmpClient.sendInform(activeSessionId, informXml));
 
             if (response.statusCode() == 401) {
-                SimLogger.device(deviceId, "CWMP authentication failed for device");
                 session.close();
                 return;
             }
 
             if (response.statusCode() != 200) {
-                SimLogger.device(deviceId, "Inform failed with status {}", response.statusCode());
                 session.close();
                 return;
             }
 
-            boolean holdRequests = soapParser.parseInformResponse(response.body());
+            boolean holdRequests;
+            try {
+                holdRequests = soapParser.parseInformResponse(response.body());
+                SimLogger.cwmpRpc(deviceId, sessionId, "ACS_TO_CPE", "InformResponse",
+                    "RECEIVED", "holdRequests=" + holdRequests);
+            } catch (Exception e) {
+                SimLogger.cwmpRpc(deviceId, sessionId, "ACS_TO_CPE", "InformResponse",
+                    "PARSE_FAILED", "error=" + e.getClass().getSimpleName());
+                throw e;
+            }
 
             lastInformTime = Instant.now();
             informCount.incrementAndGet();
@@ -220,7 +229,9 @@ public class CpeDevice implements DeviceContext {
                 request = pendingRequest;
                 methodName = pendingRequest.getMethodName();
             } else {
-                CwmpClient.CwmpResponse acsResponse = cwmpClient.sendRequest(sessionId, "");
+                CwmpClient.CwmpResponse acsResponse = sendCwmpRpc(
+                    sessionId, "EmptyRequest", "requesting ACS RPC",
+                    () -> cwmpClient.sendRequest(sessionId, ""));
 
                 if (acsResponse.statusCode() == 204) {
                     return;
@@ -238,25 +249,45 @@ public class CpeDevice implements DeviceContext {
                 request = soapParser.parse(acsResponse.body());
             }
 
+            SimLogger.cwmpRpc(deviceId, sessionId, "ACS_TO_CPE", methodName,
+                "RECEIVED", "cwmpId=" + logValue(request.getCwmpId()));
+
             RpcHandler handler = rpcRegistry.getHandler(methodName);
 
             String responseXml;
+            String responseMethod;
+            String responseDetails;
             if (handler != null) {
                 try {
                     SoapEnvelope responseEnvelope = handler.handle(this, request);
                     responseXml = soapBuilder.buildResponse(responseEnvelope);
+                    responseMethod = responseEnvelope.getMethodName() != null
+                        ? responseEnvelope.getMethodName() : methodName + "Response";
+                    responseDetails = "requestMethod=" + methodName;
+                    SimLogger.cwmpRpc(deviceId, sessionId, "ACS_TO_CPE", methodName,
+                        "HANDLED", "responseMethod=" + responseMethod);
                 } catch (Exception e) {
                     SimLogger.error("RPC handler error for " + methodName + " on device " + deviceId, e);
                     String faultCwmpId = request.getCwmpId() != null ? request.getCwmpId() : IdGenerator.cwmpId();
                     responseXml = soapBuilder.buildFault(9002, "Internal error: " + e.getMessage(), faultCwmpId);
+                    responseMethod = "Fault";
+                    responseDetails = "requestMethod=" + methodName + " faultCode=9002";
+                    SimLogger.cwmpRpc(deviceId, sessionId, "ACS_TO_CPE", methodName,
+                        "HANDLER_FAILED", "faultCode=9002 error=" + e.getClass().getSimpleName());
                 }
             } else {
                 String faultCwmpId = request.getCwmpId() != null ? request.getCwmpId() : IdGenerator.cwmpId();
-                String faultXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, faultCwmpId);
-                responseXml = faultXml;
+                responseXml = soapBuilder.buildFault(9000, "Method not supported: " + methodName, faultCwmpId);
+                responseMethod = "Fault";
+                responseDetails = "requestMethod=" + methodName + " faultCode=9000";
+                SimLogger.cwmpRpc(deviceId, sessionId, "ACS_TO_CPE", methodName,
+                    "UNSUPPORTED", "faultCode=9000");
             }
 
-            CwmpClient.CwmpResponse nextResponse = cwmpClient.sendRequest(sessionId, responseXml);
+            String outboundResponseXml = responseXml;
+            CwmpClient.CwmpResponse nextResponse = sendCwmpRpc(
+                sessionId, responseMethod, responseDetails,
+                () -> cwmpClient.sendRequest(sessionId, outboundResponseXml));
             session.touch();
 
             if (nextResponse.statusCode() == 204) {
@@ -277,7 +308,9 @@ public class CpeDevice implements DeviceContext {
     private void sendEmptyRequest(String sessionId) throws Exception {
         session.touch();
         String emptyXml = soapBuilder.buildEmptyRequest(IdGenerator.cwmpId());
-        CwmpClient.CwmpResponse response = cwmpClient.sendRequest(sessionId, emptyXml);
+        CwmpClient.CwmpResponse response = sendCwmpRpc(
+            sessionId, "EmptyRequest", "requesting ACS RPC",
+            () -> cwmpClient.sendRequest(sessionId, emptyXml));
 
         if (response.statusCode() == 204) {
             return;
@@ -286,16 +319,50 @@ public class CpeDevice implements DeviceContext {
         if (response.statusCode() == 200 && response.body() != null && !response.body().isEmpty()) {
             String methodName = soapParser.extractMethodName(response.body());
             if (methodName != null) {
+                session.setLastResponse(soapParser.parse(response.body()));
                 session.touch();
                 processAcsRequests(sessionId);
             }
         }
     }
 
+    private CwmpClient.CwmpResponse sendCwmpRpc(String sessionId, String method,
+                                                 String details, CwmpCall call) throws Exception {
+        try {
+            CwmpClient.CwmpResponse response = call.send();
+            String status = switch (response.statusCode()) {
+                case 200, 204 -> "SUCCESS";
+                case 401 -> "AUTH_FAILED";
+                default -> response.statusCode() >= 400 ? "HTTP_ERROR" : "UNEXPECTED_HTTP_STATUS";
+            };
+            SimLogger.cwmpRpc(deviceId, sessionId, "CPE_TO_ACS", method, status,
+                appendDetail(details, "httpStatus=" + response.statusCode()));
+            return response;
+        } catch (Exception e) {
+            SimLogger.cwmpRpc(deviceId, sessionId, "CPE_TO_ACS", method, "SEND_FAILED",
+                appendDetail(details, "error=" + e.getClass().getSimpleName()));
+            throw e;
+        }
+    }
+
+    private static String appendDetail(String details, String additionalDetail) {
+        return details == null || details.isBlank()
+            ? additionalDetail : details + " " + additionalDetail;
+    }
+
+    private static String logValue(String value) {
+        return value == null || value.isBlank() ? "-" : value;
+    }
+
+    @FunctionalInterface
+    private interface CwmpCall {
+        CwmpClient.CwmpResponse send() throws Exception;
+    }
+
     public void scheduleReboot(int delaySeconds) {
         scheduler.schedule(() -> {
             SimLogger.device(deviceId, "Simulating reboot");
-            this.state = DeviceState.OFFLINE;
+            transitionState(DeviceState.OFFLINE, "reboot started");
             session.close();
             try {
                 Thread.sleep(config.getRebootDelay() * 1000L);
@@ -304,7 +371,7 @@ public class CpeDevice implements DeviceContext {
                 return;
             }
             dataModel.factoryReset();
-            this.state = DeviceState.ONLINE;
+            transitionState(DeviceState.ONLINE, "reboot completed");
             triggerInform("1 BOOT", "");
         }, delaySeconds, TimeUnit.SECONDS);
     }
@@ -312,10 +379,10 @@ public class CpeDevice implements DeviceContext {
     public void scheduleFactoryReset(int delaySeconds) {
         scheduler.schedule(() -> {
             SimLogger.device(deviceId, "Simulating factory reset");
-            this.state = DeviceState.OFFLINE;
+            transitionState(DeviceState.OFFLINE, "factory reset started");
             session.close();
             dataModel.factoryReset();
-            this.state = DeviceState.ONLINE;
+            transitionState(DeviceState.ONLINE, "factory reset completed");
             triggerInform("1 BOOT", "");
         }, delaySeconds, TimeUnit.SECONDS);
     }
@@ -381,7 +448,20 @@ public class CpeDevice implements DeviceContext {
     }
 
     public void setState(DeviceState state) {
-        this.state = state;
+        transitionState(state, "state updated");
+    }
+
+    void transitionState(DeviceState newState, String reason) {
+        Objects.requireNonNull(newState, "newState");
+        DeviceState previousState;
+        synchronized (this) {
+            previousState = this.state;
+            if (previousState == newState) {
+                return;
+            }
+            this.state = newState;
+        }
+        SimLogger.connectionState(deviceId, "DEVICE", previousState, newState, reason);
     }
 
     public long getInformCount() {
@@ -441,16 +521,14 @@ public class CpeDevice implements DeviceContext {
         conn.setXmppPassword(password);
         conn.onStateChange(xmppState -> {
             switch (xmppState) {
-                case ONLINE -> {
-                    state = DeviceState.ONLINE;
-                    SimLogger.device(deviceId, "XMPP connected, device online");
-                }
+                case CONNECTING, TLS_NEGOTIATING, AUTHENTICATING, AUTHENTICATED, BINDING, BOUND ->
+                    transitionState(DeviceState.CONNECTING, "XMPP state=" + xmppState);
+                case ONLINE -> transitionState(DeviceState.ONLINE, "XMPP connected");
                 case FAILED -> {
-                    state = DeviceState.OFFLINE;
+                    transitionState(DeviceState.OFFLINE, "XMPP connection failed");
                     SimLogger.error("XMPP connection failed for device {}", deviceId);
                 }
-                case DISCONNECTED -> state = DeviceState.OFFLINE;
-                default -> {}
+                case DISCONNECTED -> transitionState(DeviceState.OFFLINE, "XMPP disconnected");
             }
         });
         xmppConnection = conn;

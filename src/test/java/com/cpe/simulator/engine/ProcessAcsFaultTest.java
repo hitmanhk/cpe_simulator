@@ -1,14 +1,19 @@
 package com.cpe.simulator.engine;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.cpe.simulator.common.AppConfig;
 import com.cpe.simulator.cwmp.*;
 import com.cpe.simulator.model.DataModel;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -30,6 +35,9 @@ class ProcessAcsFaultTest {
     @Mock
     private ScheduledExecutorService mockScheduler;
 
+    private Logger simLogger;
+    private ListAppender<ILoggingEvent> logAppender;
+
     private static final String INFORM_RESPONSE_BODY =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
         "<soap-env:Envelope xmlns:soap-env=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:cwmp=\"urn:dslforum-org:cwmp-1-0\">" +
@@ -49,6 +57,11 @@ class ProcessAcsFaultTest {
 
     @BeforeEach
     void setUp() {
+        simLogger = (Logger) LoggerFactory.getLogger("SimLogger");
+        logAppender = new ListAppender<>();
+        logAppender.start();
+        simLogger.addAppender(logAppender);
+
         AppConfig config = new AppConfig();
         config.setCount(1);
         config.setSessionTimeout(30);
@@ -63,6 +76,12 @@ class ProcessAcsFaultTest {
             "000000-SimCPE-SIM00001", "SIM00001", "000000", "SimCPE",
             dataModel, config, mockCwmpClient, mockScheduler, semaphore
         );
+    }
+
+    @AfterEach
+    void tearDownLogger() {
+        simLogger.detachAppender(logAppender);
+        logAppender.stop();
     }
 
     @Test
@@ -107,5 +126,22 @@ class ProcessAcsFaultTest {
         String faultXml = allXmls.get(1);
         assertTrue(faultXml.contains("<FaultCode>9002</FaultCode>"), "Expected FaultCode 9002 in response");
         assertTrue(faultXml.contains("Internal error"), "Expected 'Internal error' fault string");
+
+        List<String> messages = logAppender.list.stream()
+            .map(ILoggingEvent::getFormattedMessage)
+            .toList();
+        assertTrue(messages.stream().anyMatch(message ->
+            message.contains("direction=CPE_TO_ACS method=Inform status=SUCCESS")
+                && message.contains("httpStatus=200")));
+        assertTrue(messages.stream().anyMatch(message ->
+            message.contains("direction=ACS_TO_CPE method=GetParameterValues status=RECEIVED")
+                && message.contains("cwmpId=ACS-2")));
+        assertTrue(messages.stream().anyMatch(message ->
+            message.contains("direction=ACS_TO_CPE method=GetParameterValues status=HANDLER_FAILED")
+                && message.contains("faultCode=9002")));
+        assertTrue(messages.stream().anyMatch(message ->
+            message.contains("direction=CPE_TO_ACS method=Fault status=SUCCESS")
+                && message.contains("requestMethod=GetParameterValues faultCode=9002")
+                && message.contains("httpStatus=204")));
     }
 }

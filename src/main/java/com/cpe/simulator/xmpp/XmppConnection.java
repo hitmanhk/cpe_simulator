@@ -1,6 +1,7 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.SimLogger;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -193,10 +194,15 @@ public class XmppConnection {
     }
 
     public void setState(ConnectionState state) {
-        if (this.state == state) {
-            return;
+        ConnectionState previousState;
+        synchronized (this) {
+            previousState = this.state;
+            if (previousState == state) {
+                return;
+            }
+            this.state = state;
         }
-        this.state = state;
+        SimLogger.connectionState(deviceId, "XMPP", previousState, state, "protocol transition");
 
         if (state == ConnectionState.FAILED) {
             closeChannel();

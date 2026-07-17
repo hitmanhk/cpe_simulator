@@ -15,20 +15,20 @@ class XmppOnlyInformBridge {
 
     void onStateChange(XmppConnection.ConnectionState xmppState) {
         switch (xmppState) {
+            case CONNECTING, TLS_NEGOTIATING, AUTHENTICATING, AUTHENTICATED, BINDING, BOUND ->
+                device.transitionState(CpeDevice.DeviceState.CONNECTING, "XMPP state=" + xmppState);
             case ONLINE -> {
-                device.setState(CpeDevice.DeviceState.ONLINE);
+                device.transitionState(CpeDevice.DeviceState.ONLINE, "XMPP connected");
                 informScheduler.scheduleConfiguredInforms(device);
             }
             case FAILED -> {
-                device.setState(CpeDevice.DeviceState.OFFLINE);
+                device.transitionState(CpeDevice.DeviceState.OFFLINE, "XMPP connection failed");
                 informScheduler.cancelScheduledInform(device.getDeviceId());
                 SimLogger.error("XMPP connection failed for device {}", device.getDeviceId());
             }
             case DISCONNECTED -> {
-                device.setState(CpeDevice.DeviceState.OFFLINE);
+                device.transitionState(CpeDevice.DeviceState.OFFLINE, "XMPP disconnected");
                 informScheduler.cancelScheduledInform(device.getDeviceId());
-            }
-            default -> {
             }
         }
     }
