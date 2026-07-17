@@ -1,10 +1,9 @@
 package com.cpe.simulator.common;
 
 /**
- * Resolves the HTTP Connection Request endpoint for one simulator instance.
- *
- * <p>When the configured listen host is a wildcard, {@code local-address}
- * identifies both the interface to bind and the address advertised to the ACS.</p>
+ * Resolves the unified network address for one simulator instance.
+ * A concrete {@code conn-req-host} is used for outbound connections, the HTTP
+ * Connection Request listener, and the address advertised to the ACS.
  */
 public final class ConnectionRequestEndpoint {
 
@@ -14,12 +13,12 @@ public final class ConnectionRequestEndpoint {
     }
 
     public static String resolveBindHost(AppConfig config) {
-        String listenHost = valueOrDefault(config.getConnReqHost(), DEFAULT_BIND_HOST);
-        String localAddress = trimToNull(config.getLocalAddress());
-        if (isWildcard(listenHost) && localAddress != null) {
-            return localAddress;
-        }
-        return listenHost;
+        return valueOrDefault(config.getConnReqHost(), DEFAULT_BIND_HOST);
+    }
+
+    public static String resolveOutboundBindHost(AppConfig config) {
+        String host = resolveBindHost(config);
+        return isWildcard(host) ? null : stripIpv6Brackets(host);
     }
 
     public static String resolveAdvertisedHost(AppConfig config) {

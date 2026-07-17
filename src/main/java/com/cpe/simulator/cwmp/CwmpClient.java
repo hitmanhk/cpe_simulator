@@ -1,6 +1,7 @@
 package com.cpe.simulator.cwmp;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.ConnectionRequestEndpoint;
 
 import java.net.InetAddress;
 import java.net.URI;
@@ -28,17 +29,17 @@ public class CwmpClient {
 
     public CwmpClient(AppConfig config) {
         try {
-            String localAddress = config.getLocalAddress();
+            String bindHost = ConnectionRequestEndpoint.resolveOutboundBindHost(config);
             HttpClient.Builder builder = HttpClient.newBuilder()
                     .version(HttpClient.Version.HTTP_1_1)
                     .executor(Executors.newVirtualThreadPerTaskExecutor())
                     .connectTimeout(Duration.ofSeconds(30));
-            if (localAddress != null && !localAddress.isEmpty()) {
-                builder.localAddress(InetAddress.getByName(localAddress));
+            if (bindHost != null) {
+                builder.localAddress(InetAddress.getByName(bindHost));
             }
             this.httpClient = builder.build();
         } catch (java.net.UnknownHostException e) {
-            throw new IllegalArgumentException("Invalid local-address: " + config.getLocalAddress(), e);
+            throw new IllegalArgumentException("Invalid conn-req-host: " + config.getConnReqHost(), e);
         }
         this.acsUrl = config.getAcsUrl();
         this.acsUser = config.getAcsUser();

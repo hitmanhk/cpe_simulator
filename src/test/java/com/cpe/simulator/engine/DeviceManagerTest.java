@@ -181,8 +181,7 @@ class DeviceManagerTest {
 
     @Test
     void testConnectionRequestUrlUsesInstanceLocalAddress() {
-        config.setConnReqHost("0.0.0.0");
-        config.setLocalAddress("192.0.2.11");
+        config.setConnReqHost("192.0.2.11");
         DeviceManager manager = new DeviceManager(config, templateModel);
 
         CpeDevice device = manager.createDevices(1).get(0);

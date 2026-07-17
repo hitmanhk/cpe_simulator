@@ -139,15 +139,15 @@ class CliCommandTest {
     }
 
     @Test
-    void localAddressOverridesYaml() {
+    void connectionRequestHostOverridesYaml() {
         StartCommand cmd = new StartCommand();
         CommandLine cl = new CommandLine(cmd);
-        cl.parseArgs("--local-address", "192.0.2.11");
+        cl.parseArgs("--conn-req-host", "192.0.2.11");
 
         AppConfig config = new AppConfig();
         cmd.applyCliOverrides(config);
 
-        assertEquals("192.0.2.11", config.getLocalAddress());
+        assertEquals("192.0.2.11", config.getConnReqHost());
     }
 
     @Test

@@ -81,7 +81,7 @@ public class StartCommand implements Runnable {
     @Option(names = {"--boot-jitter"}, description = "Startup BOOTSTRAP inform jitter ratio (0.0-1.0)", defaultValue = "0.5")
     double bootJitter;
 
-    @Option(names = {"--conn-req-host"}, description = "Connection request listen host", defaultValue = "0.0.0.0")
+    @Option(names = {"--conn-req-host"}, description = "Instance IP for outbound connections and connection requests", defaultValue = "0.0.0.0")
     String connReqHost;
 
     @Option(names = {"--conn-req-port"}, description = "Connection request listen port", defaultValue = "7547")
@@ -128,9 +128,6 @@ public class StartCommand implements Runnable {
 
     @Option(names = {"--config"}, description = "Config file path")
     String configPath;
-
-    @Option(names = {"--local-address"}, description = "Local IP used by this simulator instance")
-    String localAddress;
 
     @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer and startup BOOTSTRAP; start scheduled reports after XMPP is online")
     boolean xmppOnly;
@@ -269,7 +266,6 @@ public class StartCommand implements Runnable {
         if (wasSpecified("--download-delay")) config.setDownloadDelay(downloadDelay);
         if (wasSpecified("--download-success-rate")) config.setDownloadSuccessRate(downloadSuccessRate);
         if (wasSpecified("--xmpp-only")) config.setXmppOnly(xmppOnly);
-        if (wasSpecified("--local-address")) config.setLocalAddress(localAddress);
 
         AppConfig.InformSchedules schedules = config.getInformSchedules();
         if (wasSpecified("--periodic-inform-interval")) schedules.getPeriodic().setInterval(informInterval);

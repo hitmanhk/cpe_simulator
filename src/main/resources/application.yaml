@@ -26,14 +26,12 @@ simulator:
   connect-batch: 1000
   connect-batch-delay: 200
 
-  conn-req-host: 0.0.0.0
+  conn-req-host: 0.0.0.0         # 实例 IP：同时用于出站连接、回连监听和回连 URL
   conn-req-port: 7547
 
   reboot-delay: 5
   download-delay: 10
   download-success-rate: 0.99
-
-  local-address: ""              # 多实例时分别配置网卡 IP，同时用于出站连接和回连监听
 
 xmpp:
   host: localhost

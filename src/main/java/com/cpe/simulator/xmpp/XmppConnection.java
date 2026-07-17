@@ -39,20 +39,20 @@ public class XmppConnection {
     private volatile String xmppUsername;
     private volatile String xmppPassword;
 
-    public XmppConnection(String deviceId, AppConfig.XmppConfig config, String localAddress, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
-        this(deviceId, deviceId, config, localAddress, connectionRequestCallback, connReqAuthConfig);
+    public XmppConnection(String deviceId, AppConfig.XmppConfig config, String bindHost, Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
+        this(deviceId, deviceId, config, bindHost, connectionRequestCallback, connReqAuthConfig);
     }
 
-    public XmppConnection(String deviceId, String serialNumber, AppConfig.XmppConfig config, String localAddress,
+    public XmppConnection(String deviceId, String serialNumber, AppConfig.XmppConfig config, String bindHost,
                           Consumer<String> connectionRequestCallback, ConnReqAuthConfig connReqAuthConfig) {
         this.deviceId = deviceId;
         this.xmppUsername = serialNumber.toLowerCase(java.util.Locale.ROOT);
         this.config = config;
         try {
-            this.localInetAddress = (localAddress != null && !localAddress.isEmpty())
-                ? InetAddress.getByName(localAddress) : null;
+            this.localInetAddress = (bindHost != null && !bindHost.isEmpty())
+                ? InetAddress.getByName(bindHost) : null;
         } catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Invalid local-address: " + localAddress, e);
+            throw new IllegalArgumentException("Invalid conn-req-host: " + bindHost, e);
         }
         this.connectionRequestCallback = connectionRequestCallback;
         this.connReqAuthConfig = connReqAuthConfig;

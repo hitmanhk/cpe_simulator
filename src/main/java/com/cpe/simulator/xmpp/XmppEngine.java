@@ -1,6 +1,7 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.ConnectionRequestEndpoint;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,11 +34,15 @@ public class XmppEngine {
     }
 
     public XmppConnection createConnection(String deviceId) {
-        return new XmppConnection(deviceId, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback, connReqAuthConfig);
+        return new XmppConnection(deviceId, appConfig.getXmpp(),
+            ConnectionRequestEndpoint.resolveOutboundBindHost(appConfig),
+            connectionRequestCallback, connReqAuthConfig);
     }
 
     public XmppConnection createConnection(String deviceId, String serialNumber) {
-        return new XmppConnection(deviceId, serialNumber, appConfig.getXmpp(), appConfig.getLocalAddress(), connectionRequestCallback, connReqAuthConfig);
+        return new XmppConnection(deviceId, serialNumber, appConfig.getXmpp(),
+            ConnectionRequestEndpoint.resolveOutboundBindHost(appConfig),
+            connectionRequestCallback, connReqAuthConfig);
     }
 
     public void start(List<XmppConnection> connections) {

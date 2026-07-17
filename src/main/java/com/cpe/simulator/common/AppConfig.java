@@ -58,6 +58,7 @@ public class AppConfig {
     @JsonProperty("boot-jitter")
     private double bootJitter = 0.5;
 
+    /** 本实例统一使用的网络地址：绑定出站连接、回连监听并生成回连 URL。 */
     @JsonProperty("conn-req-host")
     private String connReqHost = "0.0.0.0";
 
@@ -84,10 +85,6 @@ public class AppConfig {
 
     @JsonProperty("xmpp-only")
     private boolean xmppOnly = false;
-
-    /** 本实例统一使用的网卡地址：绑定出站连接、回连监听并生成回连 URL。 */
-    @JsonProperty("local-address")
-    private String localAddress;
 
     private XmppConfig xmpp = new XmppConfig();
     private LoggingConfig logging = new LoggingConfig();
@@ -146,8 +143,6 @@ public class AppConfig {
     }
     public boolean isXmppOnly() { return xmppOnly; }
     public void setXmppOnly(boolean xmppOnly) { this.xmppOnly = xmppOnly; }
-    public String getLocalAddress() { return localAddress; }
-    public void setLocalAddress(String localAddress) { this.localAddress = localAddress; }
     public XmppConfig getXmpp() { return xmpp; }
     public void setXmpp(XmppConfig xmpp) { this.xmpp = xmpp; }
     public LoggingConfig getLogging() { return logging; }
