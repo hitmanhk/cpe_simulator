@@ -33,7 +33,7 @@ simulator:
   download-delay: 10
   download-success-rate: 0.99
 
-  local-address: ""
+  local-address: ""              # 多实例时分别配置网卡 IP，同时用于出站连接和回连监听
 
 xmpp:
   host: localhost

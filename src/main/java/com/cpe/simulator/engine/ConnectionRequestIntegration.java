@@ -1,6 +1,7 @@
 package com.cpe.simulator.engine;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.ConnectionRequestEndpoint;
 import com.cpe.simulator.cwmp.CwmpServer;
 import com.cpe.simulator.cwmp.DeviceContext;
 
@@ -26,9 +27,7 @@ public class ConnectionRequestIntegration {
 
     public void configureConnectionRequestUrl(DeviceContext device) {
         String deviceId = device.getDeviceId();
-        String host = config.getConnReqHost();
-        int port = config.getConnReqPort();
-        String url = String.format("http://%s:%d/connReq/%s", host, port, deviceId);
+        String url = ConnectionRequestEndpoint.buildUrl(config, deviceId);
 
         try {
             device.getDataModel().setRelativeValue("ManagementServer.ConnectionRequestURL", url);

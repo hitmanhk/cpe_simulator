@@ -112,6 +112,7 @@ cpe-sim start [选项]
 | `--conn-req-port <port>` | 回连监听端口 | `7547` |
 | `--conn-req-user <user>` | 回连认证用户名 | - |
 | `--conn-req-password <pass>` | 回连认证密码 | - |
+| `--local-address <IP>` | 当前模拟器实例使用的本地网卡 IP | OS 自动选择 |
 | `--xmpp-host <host>` | XMPP 服务器地址 | - |
 | `--xmpp-port <port>` | XMPP 服务器端口 | DIRECT TLS 为 `5223`，其他模式为 `5222` |
 | `--xmpp-domain <domain>` | XMPP 域名 | - |
@@ -203,6 +204,7 @@ simulator:
   conn-req-port: 7547             # 回连监听端口
   conn-req-user: ""               # 回连认证用户名（可选）
   conn-req-password: ""           # 回连认证密码（可选）
+  local-address: ""               # 本实例的网卡 IP；同时绑定出站连接
   session-timeout: 30             # CWMP 会话超时（秒）
   xmpp-only: false                # true 时在每台设备 XMPP ONLINE 后启动周期 Inform
   reboot-delay: 5                 # 模拟重启延迟（秒）
@@ -226,6 +228,15 @@ logging:
 ```
 
 XMPP 端口未显式配置时，`DIRECT` TLS 默认使用 `5223`，`NONE` 和 `STARTTLS` 默认使用 `5222`。可通过 `--xmpp-port` 或 YAML 中的 `xmpp.port` 覆盖默认值。
+
+同一执行机通过多个网卡运行多个模拟器时，为每个进程配置不同的 `local-address`。当
+`conn-req-host` 保持默认通配地址时，回连服务会绑定到该实例的 `local-address`，上报给
+ACS 的 `ConnectionRequestURL` 也会使用这个 IP，因此多个实例可以共用 `7547` 端口：
+
+```bash
+java -jar target/cpe-simulator.jar start --local-address 192.0.2.11 --socket-path /tmp/cpe-sim-11.sock
+java -jar target/cpe-simulator.jar start --local-address 192.0.2.12 --socket-path /tmp/cpe-sim-12.sock
+```
 
 ### 自定义数据模型
 

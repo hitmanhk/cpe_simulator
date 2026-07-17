@@ -1,6 +1,7 @@
 package com.cpe.simulator.engine;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.ConnectionRequestEndpoint;
 import com.cpe.simulator.common.SimLogger;
 import com.cpe.simulator.cwmp.CwmpClient;
 import com.cpe.simulator.cwmp.CwmpServer;
@@ -91,11 +92,11 @@ public class SimulationEngine {
                 return new CwmpServer.ConnectionRequestResult(true, 200, "OK");
             });
             cwmpServer.start();
-            SimLogger.info("Connection request server started on port {}", config.getConnReqPort());
+            SimLogger.info("Connection request server started on {}:{}",
+                ConnectionRequestEndpoint.resolveBindHost(config), config.getConnReqPort());
 
             for (CpeDevice device : devices) {
-                String connReqUrl = String.format("http://%s:%d/connReq/%s",
-                    config.getConnReqHost(), config.getConnReqPort(), device.getDeviceId());
+                String connReqUrl = ConnectionRequestEndpoint.buildUrl(config, device.getDeviceId());
                 try {
                     device.getDataModel().setRelativeValue("ManagementServer.ConnectionRequestURL", connReqUrl);
                 } catch (IllegalArgumentException ignored) {

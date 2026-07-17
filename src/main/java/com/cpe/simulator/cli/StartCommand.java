@@ -129,6 +129,9 @@ public class StartCommand implements Runnable {
     @Option(names = {"--config"}, description = "Config file path")
     String configPath;
 
+    @Option(names = {"--local-address"}, description = "Local IP used by this simulator instance")
+    String localAddress;
+
     @Option(names = {"--xmpp-only"}, description = "XMPP-only mode: skip CwmpServer and startup BOOTSTRAP; start scheduled reports after XMPP is online")
     boolean xmppOnly;
 
@@ -266,6 +269,7 @@ public class StartCommand implements Runnable {
         if (wasSpecified("--download-delay")) config.setDownloadDelay(downloadDelay);
         if (wasSpecified("--download-success-rate")) config.setDownloadSuccessRate(downloadSuccessRate);
         if (wasSpecified("--xmpp-only")) config.setXmppOnly(xmppOnly);
+        if (wasSpecified("--local-address")) config.setLocalAddress(localAddress);
 
         AppConfig.InformSchedules schedules = config.getInformSchedules();
         if (wasSpecified("--periodic-inform-interval")) schedules.getPeriodic().setInterval(informInterval);

@@ -139,6 +139,18 @@ class CliCommandTest {
     }
 
     @Test
+    void localAddressOverridesYaml() {
+        StartCommand cmd = new StartCommand();
+        CommandLine cl = new CommandLine(cmd);
+        cl.parseArgs("--local-address", "192.0.2.11");
+
+        AppConfig config = new AppConfig();
+        cmd.applyCliOverrides(config);
+
+        assertEquals("192.0.2.11", config.getLocalAddress());
+    }
+
+    @Test
     void explicitCliValuesOverrideYamlWithoutOverwritingOtherValues() {
         StartCommand cmd = new StartCommand();
         CommandLine cl = new CommandLine(cmd);

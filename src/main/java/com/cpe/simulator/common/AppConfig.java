@@ -85,6 +85,7 @@ public class AppConfig {
     @JsonProperty("xmpp-only")
     private boolean xmppOnly = false;
 
+    /** 本实例统一使用的网卡地址：绑定出站连接、回连监听并生成回连 URL。 */
     @JsonProperty("local-address")
     private String localAddress;
 

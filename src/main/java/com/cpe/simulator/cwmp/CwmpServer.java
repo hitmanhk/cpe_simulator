@@ -1,6 +1,7 @@
 package com.cpe.simulator.cwmp;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.ConnectionRequestEndpoint;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -26,7 +27,7 @@ public class CwmpServer {
     public CwmpServer(AppConfig config, ConnectionRequestHandler handler) {
         this.config = config;
         this.port = config.getConnReqPort();
-        this.host = config.getConnReqHost();
+        this.host = ConnectionRequestEndpoint.resolveBindHost(config);
         this.requestHandler = handler;
     }
 

@@ -54,6 +54,14 @@ class DeviceManagerTest {
         pcNode.setValue(pcValue);
         deviceInfo.addChild(pcNode);
 
+        com.cpe.simulator.model.ParameterNode managementServer = new com.cpe.simulator.model.ParameterNode(
+            "ManagementServer", "Device.ManagementServer");
+        device.addChild(managementServer);
+        com.cpe.simulator.model.ParameterNode connReqUrl = new com.cpe.simulator.model.ParameterNode(
+            "ConnectionRequestURL", "Device.ManagementServer.ConnectionRequestURL");
+        connReqUrl.setValue(new ParameterValue("${conn.req.url}", "xsd:string"));
+        managementServer.addChild(connReqUrl);
+
         templateModel.saveDefaults();
     }
 
@@ -167,6 +175,22 @@ class DeviceManagerTest {
 
         CpeDevice added0 = manager.getDevices().get(5);
         assertEquals("TST00105", added0.getSerialNumber());
+
+        manager.shutdown();
+    }
+
+    @Test
+    void testConnectionRequestUrlUsesInstanceLocalAddress() {
+        config.setConnReqHost("0.0.0.0");
+        config.setLocalAddress("192.0.2.11");
+        DeviceManager manager = new DeviceManager(config, templateModel);
+
+        CpeDevice device = manager.createDevices(1).get(0);
+
+        ParameterValue connReqUrl = device.getDataModel()
+            .getValue("Device.ManagementServer.ConnectionRequestURL");
+        assertNotNull(connReqUrl);
+        assertEquals("http://192.0.2.11:7547/connReq/" + device.getDeviceId(), connReqUrl.getValue());
 
         manager.shutdown();
     }

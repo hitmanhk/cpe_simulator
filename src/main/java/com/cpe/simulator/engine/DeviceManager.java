@@ -1,6 +1,7 @@
 package com.cpe.simulator.engine;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.ConnectionRequestEndpoint;
 import com.cpe.simulator.common.IdGenerator;
 import com.cpe.simulator.cwmp.CwmpClient;
 import com.cpe.simulator.model.DataModel;
@@ -53,8 +54,7 @@ public class DeviceManager {
 
         DataModel deviceModel = templateModel.sharedCopy();
 
-        String connReqUrl = String.format("http://%s:%d/connReq/%s",
-            config.getConnReqHost(), config.getConnReqPort(), deviceId);
+        String connReqUrl = ConnectionRequestEndpoint.buildUrl(config, deviceId);
 
         ModelTemplate.TemplateContext ctx = new ModelTemplate.TemplateContext(
             serialNumber, config.getOui(), config.getProductClass(),
