@@ -19,6 +19,7 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
     private final PresenceHandler presenceHandler;
     private final BindHandler bindHandler;
     private final ExecutorService virtualThreadExecutor;
+    private final long connectionAttempt;
 
     public XmppStanzaDispatcher(XmppConnection connection,
                                  StreamHandler streamHandler,
@@ -26,7 +27,8 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
                                  IqHandler iqHandler,
                                  PresenceHandler presenceHandler,
                                  BindHandler bindHandler,
-                                 ExecutorService virtualThreadExecutor) {
+                                 ExecutorService virtualThreadExecutor,
+                                 long connectionAttempt) {
         this.connection = connection;
         this.streamHandler = streamHandler;
         this.saslHandler = saslHandler;
@@ -34,6 +36,7 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
         this.presenceHandler = presenceHandler;
         this.bindHandler = bindHandler;
         this.virtualThreadExecutor = virtualThreadExecutor;
+        this.connectionAttempt = connectionAttempt;
     }
 
     @Override
@@ -43,10 +46,23 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
             return;
         }
 
+        if (connection.getCurrentAttempt() != connectionAttempt) {
+            log.debug("Ignoring stanza from stale XMPP attempt {} for device {}, currentAttempt={}",
+                connectionAttempt, connection.getDeviceId(), connection.getCurrentAttempt());
+            ctx.close();
+            return;
+        }
+
+        connection.recordInbound(stanza);
         virtualThreadExecutor.execute(() -> dispatch(stanza));
     }
 
     private void dispatch(XmppStanza stanza) {
+        if (connection.getCurrentAttempt() != connectionAttempt) {
+            log.debug("Skipping queued stanza from stale XMPP attempt {} for device {}, currentAttempt={}",
+                connectionAttempt, connection.getDeviceId(), connection.getCurrentAttempt());
+            return;
+        }
         try {
             switch (stanza) {
                 case XmppStanza.StreamOpen open -> streamHandler.handleStreamOpen(open);
@@ -61,7 +77,8 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
                 default -> log.debug("Unhandled stanza type: {}", stanza.getClass().getSimpleName());
             }
         } catch (Exception e) {
-            log.error("Error processing stanza: {}", stanza.getClass().getSimpleName(), e);
+            log.error("Error processing stanza {} for XMPP connection {}",
+                stanza.getClass().getSimpleName(), connection.diagnosticSnapshot(), e);
         }
     }
 
@@ -86,14 +103,26 @@ public class XmppStanzaDispatcher extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("XMPP channel exception for device {}", connection.getDeviceId(), cause);
+        if (connection.getCurrentAttempt() != connectionAttempt) {
+            log.debug("Closing stale XMPP attempt {} after exception for device {}",
+                connectionAttempt, connection.getDeviceId(), cause);
+            ctx.close();
+            return;
+        }
+        log.error("XMPP channel exception: {}", connection.diagnosticSnapshot(), cause);
         connection.setState(XmppConnection.ConnectionState.FAILED);
         ctx.close();
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.warn("XMPP channel inactive for device {}", connection.getDeviceId());
+        if (connection.getCurrentAttempt() != connectionAttempt) {
+            log.debug("Stale XMPP attempt {} became inactive for device {}, currentAttempt={}",
+                connectionAttempt, connection.getDeviceId(), connection.getCurrentAttempt());
+            super.channelInactive(ctx);
+            return;
+        }
+        log.warn("XMPP channel inactive: {}", connection.diagnosticSnapshot());
         // Don't overwrite FAILED state — channel close is already handled by setState(FAILED)
         if (connection.getState() != XmppConnection.ConnectionState.FAILED) {
             connection.setState(XmppConnection.ConnectionState.DISCONNECTED);

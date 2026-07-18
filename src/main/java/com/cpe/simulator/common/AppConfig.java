@@ -258,6 +258,8 @@ public class AppConfig {
         private Boolean tls;
         @JsonProperty("sasl-mechanism")
         private String saslMechanism = "SCRAM-SHA-1";
+        @JsonProperty("handshake-timeout")
+        private int handshakeTimeout = 60;
         @JsonProperty("keepalive-interval")
         private int keepaliveInterval = 60;
         @JsonProperty("keepalive-timeout")
@@ -293,6 +295,8 @@ public class AppConfig {
         }
         public String getSaslMechanism() { return saslMechanism; }
         public void setSaslMechanism(String saslMechanism) { this.saslMechanism = saslMechanism; }
+        public int getHandshakeTimeout() { return handshakeTimeout; }
+        public void setHandshakeTimeout(int handshakeTimeout) { this.handshakeTimeout = handshakeTimeout; }
         public int getKeepaliveInterval() { return keepaliveInterval; }
         public void setKeepaliveInterval(int keepaliveInterval) { this.keepaliveInterval = keepaliveInterval; }
         public int getKeepaliveTimeout() { return keepaliveTimeout; }

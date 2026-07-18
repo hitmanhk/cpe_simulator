@@ -16,6 +16,20 @@ public class SimLogger {
         verbose = v;
     }
 
+    public static void configure(String level, String filter) {
+        setVerbose("DEBUG".equalsIgnoreCase(level));
+        clearDeviceFilters();
+        if (filter == null || filter.isBlank()) {
+            return;
+        }
+        for (String deviceId : filter.split(",")) {
+            String trimmed = deviceId.trim();
+            if (!trimmed.isEmpty()) {
+                addDeviceFilter(trimmed);
+            }
+        }
+    }
+
     public static void addDeviceFilter(String deviceId) {
         deviceFilter.add(deviceId);
     }
@@ -61,6 +75,20 @@ public class SimLogger {
         }
         LOG.info("[{}] TR-069 RPC: session={} direction={} method={} status={} details={}",
             deviceId, sessionId, direction, method, status,
+            details == null || details.isBlank() ? "-" : details);
+    }
+
+    /**
+     * Records an operational XMPP event without logging stanza payloads or
+     * credentials. These events are intentionally emitted at INFO so a
+     * connection request can be correlated across the XMPP and CWMP paths in
+     * production without enabling verbose logging for every device.
+     */
+    public static void xmppEvent(String deviceId, String event, String details) {
+        if (!deviceFilter.isEmpty() && !deviceFilter.contains(deviceId)) {
+            return;
+        }
+        LOG.info("[{}] XMPP event: event={} details={}", deviceId, event,
             details == null || details.isBlank() ? "-" : details);
     }
 

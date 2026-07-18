@@ -1,6 +1,7 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import com.cpe.simulator.common.SimLogger;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,8 @@ public class SaslHandler {
         }
 
         if (selectedMechanism == null) {
-            log.error("No compatible SASL mechanism found for device {}", connection.getDeviceId());
+            log.error("No compatible SASL mechanism found for device {}, preferred={}, advertised={}",
+                connection.getDeviceId(), preferred, serverMechanisms);
             connection.setState(XmppConnection.ConnectionState.FAILED);
             return;
         }
@@ -64,6 +66,9 @@ public class SaslHandler {
         authPassword = password;
         String initialResponse = selectedMechanism.getInitialResponse(username, password);
         connection.sendStanza(new XmppStanza.AuthStanza(selectedMechanism.getMechanismName(), initialResponse));
+        SimLogger.device(connection.getDeviceId(),
+            "XMPP SASL started: mechanism={} advertised={} username={}",
+            selectedMechanism.getMechanismName(), serverMechanisms, username);
         log.debug("SASL {} auth started for device {}", selectedMechanism.getMechanismName(), connection.getDeviceId());
     }
 
@@ -80,7 +85,8 @@ public class SaslHandler {
             resetDecoder();
             connection.sendStanza(new XmppStanza.StreamOpen(null, config.getDomain(), null));
         } else if (stanza instanceof XmppStanza.AuthFailure failure) {
-            log.error("SASL auth failed for device {}: {}", connection.getDeviceId(), failure.payload());
+            log.error("SASL auth failed for device {}: payload={} snapshot={}",
+                connection.getDeviceId(), failure.payload(), connection.diagnosticSnapshot());
             connection.setState(XmppConnection.ConnectionState.FAILED);
         }
     }

@@ -120,6 +120,7 @@ cpe-sim start [选项]
 | `--xmpp-resource <res>` | XMPP 资源名 | `sim` |
 | `--xmpp-tls-mode <NONE\|DIRECT\|STARTTLS>` | XMPP TLS 建立模式 | `NONE` |
 | `--xmpp-sasl-mechanism <name>` | SASL 认证机制 | `SCRAM-SHA-1` |
+| `--xmpp-handshake-timeout <seconds>` | XMPP 每个握手阶段超时，超时后退避重连 | `60` |
 | `--xmpp-only` | XMPP 建联模式（跳过 CwmpServer 和启动 BOOTSTRAP，建联后启动周期 Inform） | `false` |
 | `--reboot-delay <seconds>` | 模拟重启延迟 | `5` |
 | `--download-delay <seconds>` | 模拟下载延迟 | `10` |
@@ -217,6 +218,7 @@ xmpp:
   resource: sim                   # 资源名
   tls-mode: NONE                  # TLS 模式：NONE、DIRECT 或 STARTTLS
   sasl-mechanism: SCRAM-SHA-1     # SASL 认证机制：PLAIN、SCRAM-SHA-1 或 SCRAM-SHA-256
+  handshake-timeout: 60           # 每个握手阶段超时（秒），<=0 表示禁用
   keepalive-interval: 60          # Ping 间隔（秒）
   keepalive-timeout: 30           # Ping 超时（秒）
 

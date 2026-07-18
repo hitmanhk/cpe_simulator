@@ -23,13 +23,18 @@ public class IqHandler {
     }
 
     public void handleIq(XmppStanza.IqStanza iq) {
+        if (pingHandler != null
+            && ("result".equals(iq.type()) || "error".equals(iq.type()))
+            && iq.id() != null
+            && iq.id().equals(pingHandler.getLastPingId())) {
+            // An IQ error (for example service-unavailable when XEP-0199 is not
+            // supported) still proves that the XMPP stream is alive.
+            pingHandler.handlePong(iq);
+            return;
+        }
+
         if (iq.childNamespace() == null) {
-            if ("result".equals(iq.type())) {
-                if (pingHandler != null && iq.id() != null && iq.id().equals(pingHandler.getLastPingId())) {
-                    pingHandler.handlePong(iq);
-                }
-                return;
-            }
+            if ("result".equals(iq.type())) return;
             return;
         }
 

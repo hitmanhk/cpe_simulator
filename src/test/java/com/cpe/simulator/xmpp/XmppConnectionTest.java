@@ -1,11 +1,16 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -276,5 +281,59 @@ class XmppConnectionTest {
         conn.setState(XmppConnection.ConnectionState.DISCONNECTED);
         assertEquals(1, failureIds.size());
         assertEquals("device001", failureIds.get(0));
+    }
+
+    @Test
+    void diagnosticSnapshotIncludesProtocolStateAndSafeEndpointDefaults() {
+        XmppConnection conn = new XmppConnection(
+            "device001", config, "127.0.0.2", null,
+            new ConnReqAuthConfig(false, null, null));
+
+        conn.setState(XmppConnection.ConnectionState.AUTHENTICATING);
+
+        String snapshot = conn.diagnosticSnapshot();
+        assertTrue(snapshot.contains("device=device001"));
+        assertTrue(snapshot.contains("state=AUTHENTICATING"));
+        assertTrue(snapshot.contains("channelActive=false"));
+        assertTrue(snapshot.contains("local=127.0.0.2:auto"));
+        assertTrue(snapshot.contains("remote=localhost:5222"));
+        assertTrue(snapshot.contains("lastInbound=-/-1ms"));
+        assertTrue(snapshot.contains("lastOutbound=-/-1ms"));
+        assertFalse(snapshot.contains(config.getPassword()));
+    }
+
+    @Test
+    void handshakeTimeoutFailsTcpConnectionThatNeverCompletesXmppHandshake() throws Exception {
+        config.setHost("127.0.0.1");
+        config.setHandshakeTimeout(1);
+        CountDownLatch releaseAcceptedSocket = new CountDownLatch(1);
+
+        try (ServerSocket server = new ServerSocket(0)) {
+            Thread acceptor = Thread.ofVirtual().start(() -> {
+                try (Socket ignored = server.accept()) {
+                    releaseAcceptedSocket.await(5, TimeUnit.SECONDS);
+                } catch (Exception ignored) {
+                }
+            });
+            config.setPort(server.getLocalPort());
+
+            NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(1);
+            try {
+                XmppConnection conn = new XmppConnection(
+                    "device-timeout", config, null, null,
+                    new ConnReqAuthConfig(false, null, null));
+                CountDownLatch failed = new CountDownLatch(1);
+                conn.onFailure(deviceId -> failed.countDown());
+
+                conn.connect(eventLoopGroup).get(3, TimeUnit.SECONDS);
+
+                assertTrue(failed.await(3, TimeUnit.SECONDS));
+                assertEquals(XmppConnection.ConnectionState.FAILED, conn.getState());
+            } finally {
+                releaseAcceptedSocket.countDown();
+                eventLoopGroup.shutdownGracefully().sync();
+                acceptor.join(3000);
+            }
+        }
     }
 }

@@ -56,6 +56,7 @@ public class SimulationEngine {
     }
 
     public void start() throws Exception {
+        SimLogger.configure(config.getLogging().getLevel(), config.getLogging().getDeviceFilter());
         SimLogger.info("Starting simulation engine");
         config.validateInformSchedules();
 
@@ -112,7 +113,14 @@ public class SimulationEngine {
 
             xmppEngine = new XmppEngine(config, deviceId -> {
                 CpeDevice device = (CpeDevice) deviceRegistry.getDevice(deviceId);
-                if (device != null && !device.isSessionActive()) {
+                if (device == null) {
+                    SimLogger.warn("[{}] XMPP ConnectionRequest ignored: device not found", deviceId);
+                } else if (device.isSessionActive()) {
+                    SimLogger.xmppEvent(deviceId, "CONNECTION_REQUEST_CWMP_SKIPPED",
+                        "reason=cwmp_session_active");
+                } else {
+                    SimLogger.xmppEvent(deviceId, "CONNECTION_REQUEST_CWMP_TRIGGERED",
+                        "eventCode=6 CONNECTION REQUEST");
                     device.triggerInform("6 CONNECTION REQUEST");
                 }
             }, connReqAuthConfig);

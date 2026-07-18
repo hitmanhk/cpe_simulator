@@ -115,4 +115,22 @@ class IqHandlerTest {
         assertTrue(sent.xml().contains("<error type=\"cancel\">"));
         assertTrue(sent.xml().contains("<not-authorized"));
     }
+
+    @Test
+    void pingErrorResponseStillCountsAsLiveness() {
+        PingHandler pingHandler = mock(PingHandler.class);
+        when(pingHandler.getLastPingId()).thenReturn("ping-1");
+        ConnReqAuthHandler authHandler = new ConnReqAuthHandler(
+            connection, new ConnReqAuthConfig(false, null, null));
+        IqHandler iqHandler = new IqHandler(connection, null, pingHandler, authHandler);
+        XmppStanza.IqStanza error = new XmppStanza.IqStanza(
+            "ping-1", "error", "xmpp.example.com", null,
+            "error", "urn:ietf:params:xml:ns:xmpp-stanzas",
+            "<iq id=\"ping-1\" type=\"error\"><error type=\"cancel\"><service-unavailable/></error></iq>");
+
+        iqHandler.handleIq(error);
+
+        verify(pingHandler).handlePong(error);
+        verify(connection, never()).sendStanza(any());
+    }
 }

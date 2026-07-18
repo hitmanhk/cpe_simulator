@@ -1,6 +1,7 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.XmlUtil;
+import com.cpe.simulator.common.SimLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,10 +21,22 @@ public class ConnReqAuthHandler {
     }
 
     public void handle(XmppStanza.IqStanza iq, Consumer<String> callback) {
+        SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_RECEIVED",
+            "iqId=" + value(iq.id())
+                + " from=" + value(iq.from())
+                + " to=" + value(iq.to())
+                + " localJid=" + value(connection.getJid())
+                + " authEnabled=" + authConfig.enabled()
+                + " attempt=" + connection.getCurrentAttempt());
         if (!authConfig.enabled()) {
             sendResult(iq);
             if (callback != null) {
                 callback.accept(connection.getDeviceId());
+                SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_DISPATCHED",
+                    "iqId=" + value(iq.id()) + " auth=disabled");
+            } else {
+                SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_NOT_DISPATCHED",
+                    "iqId=" + value(iq.id()) + " reason=no_callback");
             }
             return;
         }
@@ -38,9 +51,16 @@ public class ConnReqAuthHandler {
             sendResult(iq);
             if (callback != null) {
                 callback.accept(connection.getDeviceId());
+                SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_DISPATCHED",
+                    "iqId=" + value(iq.id()) + " auth=success");
+            } else {
+                SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_NOT_DISPATCHED",
+                    "iqId=" + value(iq.id()) + " reason=no_callback");
             }
         } else {
             log.warn("XMPP ConnectionRequest auth failed for device {}", connection.getDeviceId());
+            SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_REJECTED",
+                "iqId=" + value(iq.id()) + " reason=authentication_failed");
             sendAuthError(iq, iq.rawXml());
         }
     }
@@ -130,5 +150,9 @@ public class ConnReqAuthHandler {
         }
 
         return "<connectionRequest xmlns=\"" + XmlUtil.NS_CWMP_XMPP_CONN_REQ + "\"/>";
+    }
+
+    private static String value(String value) {
+        return value == null || value.isBlank() ? "-" : value;
     }
 }

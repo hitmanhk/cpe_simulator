@@ -117,6 +117,9 @@ public class StartCommand implements Runnable {
     @Option(names = {"--xmpp-sasl-mechanism"}, description = "XMPP SASL mechanism: PLAIN, SCRAM-SHA-1, or SCRAM-SHA-256")
     String xmppSaslMechanism;
 
+    @Option(names = {"--xmpp-handshake-timeout"}, description = "XMPP handshake stage timeout in seconds (<=0 disables)", defaultValue = "60")
+    int xmppHandshakeTimeout;
+
     @Option(names = {"--reboot-delay"}, description = "Reboot delay in seconds", defaultValue = "5")
     int rebootDelay;
 
@@ -284,6 +287,7 @@ public class StartCommand implements Runnable {
         if (wasSpecified("--xmpp-resource")) xmpp.setResource(xmppResource);
         if (wasSpecified("--xmpp-tls-mode")) xmpp.setTlsMode(xmppTlsMode);
         if (wasSpecified("--xmpp-sasl-mechanism")) xmpp.setSaslMechanism(xmppSaslMechanism);
+        if (wasSpecified("--xmpp-handshake-timeout")) xmpp.setHandshakeTimeout(xmppHandshakeTimeout);
     }
 
     private boolean wasSpecified(String... optionNames) {

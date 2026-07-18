@@ -1,6 +1,7 @@
 package com.cpe.simulator.xmpp;
 
 import com.cpe.simulator.common.AppConfig;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -31,6 +32,12 @@ class PingHandlerTest {
         scheduler = Executors.newScheduledThreadPool(1);
         pingHandler = new PingHandler(connection, config);
         pingHandler.setScheduler(scheduler);
+    }
+
+    @AfterEach
+    void tearDown() {
+        pingHandler.stop();
+        scheduler.shutdownNow();
     }
 
     @Test
@@ -88,9 +95,18 @@ class PingHandlerTest {
 
         Thread.sleep(2000);
 
-        verify(connection).setState(XmppConnection.ConnectionState.FAILED);
+        verify(connection).failCurrentAttempt(0);
 
         scheduler.shutdown();
         scheduler.awaitTermination(5, TimeUnit.SECONDS);
+    }
+
+    @Test
+    void startSchedulesPeriodicPingWhileConnectionIsOnline() {
+        config.setKeepaliveInterval(1);
+
+        pingHandler.start();
+
+        verify(connection, timeout(2500)).sendStanza(any(XmppStanza.RawXml.class));
     }
 }

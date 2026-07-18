@@ -23,6 +23,7 @@ class ConfigLoaderXmppTest {
               host: xmpp.example.com
               tls-mode: STARTTLS
               sasl-mechanism: SCRAM-SHA-256
+              handshake-timeout: 45
             """);
 
         AppConfig config = ConfigLoader.load(configFile.toString());
@@ -30,5 +31,6 @@ class ConfigLoaderXmppTest {
         assertEquals("xmpp.example.com", config.getXmpp().getHost());
         assertEquals(AppConfig.XmppConfig.TlsMode.STARTTLS, config.getXmpp().getTlsMode());
         assertEquals("SCRAM-SHA-256", config.getXmpp().getSaslMechanism());
+        assertEquals(45, config.getXmpp().getHandshakeTimeout());
     }
 }

@@ -41,6 +41,7 @@ xmpp:
   resource: sim
   tls-mode: NONE
   sasl-mechanism: SCRAM-SHA-1
+  handshake-timeout: 60
   keepalive-interval: 60
   keepalive-timeout: 30
 

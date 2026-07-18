@@ -33,6 +33,7 @@ class XmppTlsConfigTest {
         assertEquals(AppConfig.XmppConfig.TlsMode.NONE, config.getTlsMode());
         assertEquals(5222, config.getPort());
         assertEquals("SCRAM-SHA-1", config.getSaslMechanism());
+        assertEquals(60, config.getHandshakeTimeout());
     }
 
     @Test
