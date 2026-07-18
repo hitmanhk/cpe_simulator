@@ -1,5 +1,6 @@
 package com.cpe.simulator.xmpp;
 
+import com.cpe.simulator.common.AppConfig;
 import io.netty.channel.EventLoopGroup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -179,5 +180,25 @@ class ReconnectSchedulerTest {
             mockEventLoopGroup);
 
         assertDoesNotThrow(() -> scheduler.onFailure("nonexistent"));
+    }
+
+    @Test
+    void testUsesConfiguredInitialDelay() {
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+        config.setReconnectInitialDelay(120);
+        config.setReconnectMaxDelay(600);
+        ReconnectScheduler scheduler = new ReconnectScheduler(mockScheduler,
+            deviceId -> connections.stream()
+                .filter(c -> c.getDeviceId().equals(deviceId))
+                .findFirst().orElse(null),
+            mockEventLoopGroup,
+            config);
+        scheduledDelays.clear();
+
+        scheduler.onFailure("device001");
+
+        long delay = scheduledDelays.get(0);
+        assertTrue(delay >= 108_000 && delay <= 132_000,
+            "Configured initial delay should be ~120s, got: " + delay + "ms");
     }
 }

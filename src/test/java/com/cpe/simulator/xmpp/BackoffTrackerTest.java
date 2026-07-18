@@ -7,11 +7,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BackoffTrackerTest {
 
+    private static final long INITIAL_DELAY_MS = 30_000;
+    private static final long MAX_DELAY_MS = 30 * 60_000;
     private ReconnectScheduler.BackoffTracker tracker;
 
     @BeforeEach
     void setUp() {
-        tracker = new ReconnectScheduler.BackoffTracker();
+        tracker = new ReconnectScheduler.BackoffTracker(INITIAL_DELAY_MS, MAX_DELAY_MS);
     }
 
     @Test
@@ -44,9 +46,9 @@ class BackoffTrackerTest {
             tracker.nextDelay();
         }
         long delay = tracker.nextDelay();
-        assertTrue(delay <= ReconnectScheduler.MAX_DELAY_MS * 1.1,
+        assertTrue(delay <= MAX_DELAY_MS * 1.1,
             "Delay should cap at ~30min, got: " + delay + "ms");
-        assertTrue(delay >= ReconnectScheduler.MAX_DELAY_MS * 0.9,
+        assertTrue(delay >= MAX_DELAY_MS * 0.9,
             "Delay should be near 30min cap, got: " + delay + "ms");
     }
 
@@ -84,10 +86,28 @@ class BackoffTrackerTest {
     @Test
     void testJitterNeverGoesBelow15s() {
         for (int i = 0; i < 1000; i++) {
-            ReconnectScheduler.BackoffTracker t = new ReconnectScheduler.BackoffTracker();
+            ReconnectScheduler.BackoffTracker t =
+                new ReconnectScheduler.BackoffTracker(INITIAL_DELAY_MS, MAX_DELAY_MS);
             long delay = t.nextDelay();
-            assertTrue(delay >= ReconnectScheduler.INITIAL_DELAY_MS / 2,
+            assertTrue(delay >= INITIAL_DELAY_MS / 2,
                 "Delay should never go below 15s, got: " + delay + "ms");
         }
+    }
+
+    @Test
+    void testUsesConfiguredDelayRange() {
+        ReconnectScheduler.BackoffTracker configuredTracker =
+            new ReconnectScheduler.BackoffTracker(120_000, 600_000);
+
+        long firstDelay = configuredTracker.nextDelay();
+        assertTrue(firstDelay >= 108_000 && firstDelay <= 132_000,
+            "First delay should use configured 120s, got: " + firstDelay + "ms");
+
+        for (int i = 0; i < 10; i++) {
+            configuredTracker.nextDelay();
+        }
+        long cappedDelay = configuredTracker.nextDelay();
+        assertTrue(cappedDelay >= 540_000 && cappedDelay <= 660_000,
+            "Delay should use configured 600s cap, got: " + cappedDelay + "ms");
     }
 }

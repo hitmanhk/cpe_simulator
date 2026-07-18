@@ -1,5 +1,6 @@
 package com.cpe.simulator.xmpp;
 
+import com.cpe.simulator.common.AppConfig;
 import io.netty.channel.EventLoopGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,21 +17,38 @@ public class ReconnectScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(ReconnectScheduler.class);
 
-    static final long INITIAL_DELAY_MS = 30_000;    // 30 seconds
-    static final long MAX_DELAY_MS = 30 * 60_000;   // 30 minutes
-
     private final Set<String> pendingDevices = ConcurrentHashMap.newKeySet();
     private final ConcurrentHashMap<String, BackoffTracker> backoffTrackers = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler;
     private final Function<String, XmppConnection> connectionProvider;
     private final EventLoopGroup eventLoopGroup;
+    private final long initialDelayMs;
+    private final long maxDelayMs;
+
+    public ReconnectScheduler(ScheduledExecutorService scheduler,
+                              Function<String, XmppConnection> connectionProvider,
+                              EventLoopGroup eventLoopGroup) {
+        this(scheduler, connectionProvider, eventLoopGroup, new AppConfig.XmppConfig());
+    }
 
     public ReconnectScheduler(ScheduledExecutorService scheduler,
                                Function<String, XmppConnection> connectionProvider,
-                               EventLoopGroup eventLoopGroup) {
+                               EventLoopGroup eventLoopGroup,
+                               AppConfig.XmppConfig config) {
         this.scheduler = scheduler;
         this.connectionProvider = connectionProvider;
         this.eventLoopGroup = eventLoopGroup;
+        this.initialDelayMs = TimeUnit.SECONDS.toMillis(config.getReconnectInitialDelay());
+        this.maxDelayMs = TimeUnit.SECONDS.toMillis(config.getReconnectMaxDelay());
+        if (initialDelayMs <= 0) {
+            throw new IllegalArgumentException("xmpp.reconnect-initial-delay must be greater than 0");
+        }
+        if (maxDelayMs < initialDelayMs) {
+            throw new IllegalArgumentException(
+                "xmpp.reconnect-max-delay must be greater than or equal to xmpp.reconnect-initial-delay");
+        }
+        log.info("XMPP reconnect backoff configured: initial={}s, max={}s, multiplier=2, jitter=10%",
+            config.getReconnectInitialDelay(), config.getReconnectMaxDelay());
     }
 
     public void onFailure(String deviceId) {
@@ -38,7 +56,8 @@ public class ReconnectScheduler {
             log.debug("Reconnect already pending for device {}, ignoring duplicate", deviceId);
             return;
         }
-        BackoffTracker tracker = backoffTrackers.computeIfAbsent(deviceId, k -> new BackoffTracker());
+        BackoffTracker tracker = backoffTrackers.computeIfAbsent(
+            deviceId, k -> new BackoffTracker(initialDelayMs, maxDelayMs));
         long delay = tracker.nextDelay();
         log.info("Scheduling reconnect for device {} in {}ms (attempt {})",
                  deviceId, delay, tracker.getAttemptCount());
@@ -73,15 +92,25 @@ public class ReconnectScheduler {
 
     /**
      * Per-device exponential backoff tracker.
-     * Delay sequence: 30s, 1min, 2min, 4min, 8min, 16min, 30min, 30min, ...
+     * Each delay doubles until it reaches the configured maximum.
      */
     static class BackoffTracker {
         private final AtomicInteger attemptCount = new AtomicInteger(0);
+        private final long initialDelayMs;
+        private final long maxDelayMs;
+
+        BackoffTracker(long initialDelayMs, long maxDelayMs) {
+            this.initialDelayMs = initialDelayMs;
+            this.maxDelayMs = maxDelayMs;
+        }
 
         long nextDelay() {
             int attempt = attemptCount.getAndIncrement();
-            long baseDelay = INITIAL_DELAY_MS * (1L << attempt);
-            long delay = Math.min(baseDelay, MAX_DELAY_MS);
+            long multiplier = attempt >= Long.SIZE - 1 ? Long.MAX_VALUE : 1L << attempt;
+            long baseDelay = multiplier > maxDelayMs / initialDelayMs
+                ? maxDelayMs
+                : initialDelayMs * multiplier;
+            long delay = Math.min(baseDelay, maxDelayMs);
             return addJitter(delay);
         }
 
@@ -95,7 +124,7 @@ public class ReconnectScheduler {
 
         private long addJitter(long delay) {
             long jitter = (long) (ThreadLocalRandom.current().nextDouble(-0.1, 0.1) * delay);
-            return Math.max(delay + jitter, INITIAL_DELAY_MS / 2);
+            return Math.max(delay + jitter, initialDelayMs / 2);
         }
     }
 }

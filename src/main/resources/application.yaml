@@ -44,6 +44,8 @@ xmpp:
   handshake-timeout: 60
   keepalive-interval: 60
   keepalive-timeout: 30
+  reconnect-initial-delay: 30  # seconds
+  reconnect-max-delay: 1800   # seconds
 
 logging:
   level: INFO

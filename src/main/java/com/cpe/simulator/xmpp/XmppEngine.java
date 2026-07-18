@@ -56,7 +56,8 @@ public class XmppEngine {
         this.connections.addAll(connections);
         running = true;
 
-        this.reconnectScheduler = new ReconnectScheduler(scheduler, this::getConnection, eventLoopGroup);
+        this.reconnectScheduler = new ReconnectScheduler(
+            scheduler, this::getConnection, eventLoopGroup, appConfig.getXmpp());
         scheduler.scheduleWithFixedDelay(this::logConnectionDiagnostics,
             DIAGNOSTIC_INITIAL_DELAY_SECONDS, DIAGNOSTIC_INTERVAL_SECONDS, TimeUnit.SECONDS);
 

@@ -264,6 +264,10 @@ public class AppConfig {
         private int keepaliveInterval = 60;
         @JsonProperty("keepalive-timeout")
         private int keepaliveTimeout = 30;
+        @JsonProperty("reconnect-initial-delay")
+        private int reconnectInitialDelay = 30;
+        @JsonProperty("reconnect-max-delay")
+        private int reconnectMaxDelay = 30 * 60;
 
         public String getHost() { return host; }
         public void setHost(String host) { this.host = host; }
@@ -301,6 +305,10 @@ public class AppConfig {
         public void setKeepaliveInterval(int keepaliveInterval) { this.keepaliveInterval = keepaliveInterval; }
         public int getKeepaliveTimeout() { return keepaliveTimeout; }
         public void setKeepaliveTimeout(int keepaliveTimeout) { this.keepaliveTimeout = keepaliveTimeout; }
+        public int getReconnectInitialDelay() { return reconnectInitialDelay; }
+        public void setReconnectInitialDelay(int reconnectInitialDelay) { this.reconnectInitialDelay = reconnectInitialDelay; }
+        public int getReconnectMaxDelay() { return reconnectMaxDelay; }
+        public void setReconnectMaxDelay(int reconnectMaxDelay) { this.reconnectMaxDelay = reconnectMaxDelay; }
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
