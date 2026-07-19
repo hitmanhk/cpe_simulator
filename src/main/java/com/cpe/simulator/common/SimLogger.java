@@ -1,8 +1,11 @@
 package com.cpe.simulator.common;
 
+import com.cpe.simulator.common.event.SimEvent;
+import com.cpe.simulator.common.event.SimEventHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -57,6 +60,15 @@ public class SimLogger {
      */
     public static void connectionState(String deviceId, String connectionType,
                                        Object previousState, Object currentState, String reason) {
+        if (SimEventHub.hasListeners()) {
+            SimEvent.Category category = "DEVICE".equals(connectionType)
+                    ? SimEvent.Category.DEVICE_STATE : SimEvent.Category.CONNECTION_STATE;
+            SimEventHub.publish(SimEvent.of(category, deviceId, String.valueOf(currentState),
+                Map.of("connectionType", connectionType,
+                    "previous", String.valueOf(previousState),
+                    "current", String.valueOf(currentState),
+                    "reason", reason == null ? "" : reason)));
+        }
         if (!deviceFilter.isEmpty() && !deviceFilter.contains(deviceId)) {
             return;
         }
@@ -70,6 +82,14 @@ public class SimLogger {
      */
     public static void cwmpRpc(String deviceId, String sessionId, String direction,
                                String method, String status, String details) {
+        if (SimEventHub.hasListeners()) {
+            SimEventHub.publish(SimEvent.of(SimEvent.Category.CWMP_RPC, deviceId, method,
+                Map.of("sessionId", sessionId == null ? "" : sessionId,
+                    "direction", direction == null ? "" : direction,
+                    "method", method == null ? "" : method,
+                    "status", status == null ? "" : status,
+                    "details", details == null ? "" : details)));
+        }
         if (!deviceFilter.isEmpty() && !deviceFilter.contains(deviceId)) {
             return;
         }
@@ -85,6 +105,11 @@ public class SimLogger {
      * production without enabling verbose logging for every device.
      */
     public static void xmppEvent(String deviceId, String event, String details) {
+        if (SimEventHub.hasListeners()) {
+            SimEventHub.publish(SimEvent.of(SimEvent.Category.XMPP_EVENT, deviceId, event,
+                Map.of("event", event == null ? "" : event,
+                    "details", details == null ? "" : details)));
+        }
         if (!deviceFilter.isEmpty() && !deviceFilter.contains(deviceId)) {
             return;
         }

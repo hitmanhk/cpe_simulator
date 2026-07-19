@@ -23,12 +23,18 @@ public class CwmpServer {
     private final String host;
     private final AppConfig config;
     private final ConnectionRequestHandler requestHandler;
+    private volatile ConnReqCredentialProvider credentialProvider;
 
     public CwmpServer(AppConfig config, ConnectionRequestHandler handler) {
         this.config = config;
         this.port = config.getConnReqPort();
         this.host = ConnectionRequestEndpoint.resolveBindHost(config);
         this.requestHandler = handler;
+    }
+
+    /** Sets the per-device credential provider (per-vendor auth); null keeps global-only auth. */
+    public void setCredentialProvider(ConnReqCredentialProvider credentialProvider) {
+        this.credentialProvider = credentialProvider;
     }
 
     public void start() throws InterruptedException {
@@ -45,7 +51,7 @@ public class CwmpServer {
                         pipeline.addLast(new HttpRequestDecoder());
                         pipeline.addLast(new HttpObjectAggregator(65536));
                         pipeline.addLast(new HttpResponseEncoder());
-                        pipeline.addLast(new CwmpServerHandler(config, requestHandler));
+                        pipeline.addLast(new CwmpServerHandler(config, requestHandler, credentialProvider));
                     }
                 })
                 .option(ChannelOption.SO_BACKLOG, 128)

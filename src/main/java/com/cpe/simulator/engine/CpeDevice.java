@@ -33,6 +33,8 @@ public class CpeDevice implements DeviceContext {
     private final String serialNumber;
     private final String oui;
     private final String productClass;
+    private volatile String vendorName;
+    private volatile Instant onlineSince;
     private final DataModel dataModel;
     private final CwmpSession session;
     private volatile XmppConnection xmppConnection;
@@ -447,6 +449,25 @@ public class CpeDevice implements DeviceContext {
         return state;
     }
 
+    /** 所属厂商名（未归属任何厂商时为 null，如 CLI 批量创建的设备）。 */
+    public String getVendorName() {
+        return vendorName;
+    }
+
+    public void setVendorName(String vendorName) {
+        this.vendorName = vendorName;
+    }
+
+    /** 进入 ONLINE 状态的时刻；非 ONLINE 状态为 null。 */
+    public Instant getOnlineSince() {
+        return onlineSince;
+    }
+
+    /** 建联类型：公网（HTTP 回连）或 XMPP（NAT 穿透）。 */
+    public String getConnectionType() {
+        return config.isNatMode() ? "XMPP" : "公网";
+    }
+
     public void setState(DeviceState state) {
         transitionState(state, "state updated");
     }
@@ -460,6 +481,7 @@ public class CpeDevice implements DeviceContext {
                 return;
             }
             this.state = newState;
+            this.onlineSince = newState == DeviceState.ONLINE ? Instant.now() : null;
         }
         SimLogger.connectionState(deviceId, "DEVICE", previousState, newState, reason);
     }

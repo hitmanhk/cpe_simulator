@@ -15,6 +15,7 @@
 - **现代技术栈**：Java 21 虚拟线程、Netty 4.1、Jackson、picocli
 - **运行时管理**：Unix Domain Socket 接口，支持动态控制
 - **CLI 界面**：完整的命令行工具，支持操作和监控
+- **桌面 GUI**：现代化 JavaFX 桌面应用（Windows 安装包 / 跨平台 JAR），与 CLI 双模式共存
 
 ## 环境要求
 
@@ -30,6 +31,50 @@ mvn clean package
 ```
 
 构建产物为 `target/cpe-simulator.jar`（包含所有依赖的 fat JAR）。
+
+### 桌面模式（GUI）
+
+不带参数启动即进入桌面应用（双击 JAR 或安装包图标等效）：
+
+```bash
+java --enable-preview -jar target/cpe-simulator.jar
+# 或显式指定
+java --enable-preview -jar target/cpe-simulator.jar --gui
+```
+
+应用名称为「ACS 设备模拟器」，采用 Cupertino 主题（macOS 风格控件），支持浅色/深色一键切换，
+页面切换带淡入滑动动画，顶部为灵动岛式状态胶囊（悬停展开实时摘要）。
+
+功能页面：
+
+- **仪表盘**：设备总数/在线数/活跃会话/累计 Inform/运行时长/JVM 内存状态卡片，Inform 速率与在线设备实时折线图
+- **设备管理**（厂商分组树表）：
+  - **厂商管理**：「新增厂商」携带 Manufacturer、OUI、ProductClass、回连账户密码（单一来源，不在设备级重复配置）；内置默认厂商（取配置页 OUI/ProductClass/回连凭据）；厂商凭据用于 per-厂商回连认证（HTTP 与 XMPP 路径均生效，无厂商凭据时回退全局凭据）
+  - **设备池**：设备按厂商分组显示（可展开/收起）；「新增设备」仅创建（未启动状态），**引擎未启动时也可新增**；支持批量/独立配置 DeviceInfo（软件版本、硬件版本、附加版本、ProvisioningCode）
+  - **生命周期分离**：「启动模拟器」仅启动基础设施（回连监听/XMPP 引擎/调度器，忽略 count）；「启动设备」对勾选设备上线（公网→ONLINE+0 BOOTSTRAP+周期调度；NAT→XMPP 建联）；「停止设备」下线
+  - **勾选与过滤**：全选/厂商内全选/单选；按厂商名、OUI、型号、软件版本、硬件版本、回连 IP、ACS IP 过滤
+  - **状态展示**：建联类型（公网/XMPP）、建联状态（未启动/建联中/在线/离线）、在线时间；引擎停止后设备规格池保留，重启按原序列号恢复（deviceId 不变）
+- **消息监视**：CWMP RPC 消息流与 XMPP 事件流（设备/方法过滤、暂停、清空、导出 CSV）
+- **日志**：全量实时日志（级别过滤/文本搜索/自动滚动）
+- **协议指南**：TR-069 会话、TR-069 回连（公网/NAT）、TR-069 RPC 流程、TR-069 错误码、XMPP 建联、TLS、SASL 流程时序图，标注每条消息的方向与开始/结束特征
+- **配置**：全部配置项的分组表单（每项带悬停说明，密码明文显示），实时校验，支持 YAML 加载/保存，与 CLI 配置文件格式完全兼容
+
+在「配置」页编辑后点击顶部「启动模拟器」即可运行；运行期间配置锁定，停止后可修改。
+应用图标由 `src/test/java/.../desktop/util/IconGenerator` 生成（如需调整设计，改完后运行其 main 方法重新生成 `src/main/resources/icons/` 与 `src/jpackage/app.ico`）。
+
+### Windows 安装包
+
+```bash
+# 免安装应用目录（target/installer/CpeSimulator/，含裁剪 JRE，无需安装 Java）
+mvn clean package -Pwindows-installer
+
+# 安装向导（需先安装 WiX Toolset 3.11+）
+mvn clean package -Pwindows-installer -Djpackage.type=exe
+```
+
+安装包内嵌裁剪过的 JRE 与 JavaFX 运行时，目标机器无需预装 Java；
+`CpeSimulator.exe` 无参数启动 GUI，带 CLI 参数（如 `version`、`start`）则走原命令行模式。
+安装到 Program Files 等只读目录时，日志自动写入用户目录 `~/.cpe-simulator/logs`。
 
 ### 公网模式启动
 
@@ -175,56 +220,32 @@ cpe-sim version
 
 ### 配置文件（application.yaml）
 
+配置文件分两段：`simulator`（模拟器主体配置，`logging` 嵌于其内）与顶层 `xmpp`（NAT 模式通道）。
+每个配置项在 `src/main/resources/application.yaml` 中都有逐条中文注释（用途/取值/默认值），
+GUI「配置」页的"保存 YAML"也生成同一格式，可直接互相加载。完整字段一览：
+
 ```yaml
 simulator:
-  mode: public                    # 运行模式：public 或 nat
+  mode: public                    # 运行模式：public（HTTP 回连）或 nat（XMPP 穿透）
   count: 100                      # CPE 实例数量
   acs-url: http://localhost:7547/ # ACS 端点地址
-  acs-user: admin                 # ACS 认证用户名
-  acs-password: admin             # ACS 认证密码
   model: tr181                    # 数据模型：tr181、tr098 或自定义文件路径
-  oui: "000000"                   # OUI 前缀
-  product-class: SimCPE           # 产品类别
-  serial-prefix: SIM              # 序列号前缀
-  inform-schedules:
-    bootstrap:
-      interval: 86400             # 上报周期（秒），0 表示禁用
-      initial-jitter: 0.2         # 首次调度抖动比例，可省略
-    boot:
-      interval: 3600              # 0 表示禁用
-      initial-jitter: 0.2
-    periodic:
-      interval: 300               # 0 表示禁用
-      initial-jitter: 0.3
-  max-sessions: 1000              # 最大并发会话数
-  boot-batch-size: 100            # 启动 BOOTSTRAP Inform 每批设备数
-  boot-batch-delay: 1000          # 启动 BOOTSTRAP Inform 批次间隔（毫秒）
-  boot-jitter: 0.5                # 启动 BOOTSTRAP Inform 批内随机抖动
-  conn-req-host: 0.0.0.0         # 实例 IP：出站源 IP、回连监听和通告地址
-  conn-req-port: 7547             # 回连监听端口
-  conn-req-user: ""               # 回连认证用户名（可选）
-  conn-req-password: ""           # 回连认证密码（可选）
-  session-timeout: 30             # CWMP 会话超时（秒）
-  xmpp-only: false                # true 时在每台设备 XMPP ONLINE 后启动周期 Inform
-  reboot-delay: 5                 # 模拟重启延迟（秒）
-  download-delay: 10              # 模拟下载延迟（秒）
-  download-success-rate: 0.99     # 下载成功率
+  inform-schedules:               # 三个事件的周期调度；interval=0 禁用，jitter 打散首次上报
+    bootstrap: { interval: 86400, initial-jitter: 0.2 }
+    boot:      { interval: 3600,  initial-jitter: 0.2 }
+    periodic:  { interval: 300,   initial-jitter: 0.3 }
+  max-sessions: 1000              # 全局最大并发 CWMP 会话（信号量限流）
+  conn-req-port: 7547             # 回连监听端口（⚠ 避开 Windows 保留端口段，见文件内注释）
+  logging:
+    level: INFO                   # 注意：logging 必须嵌在 simulator 内，顶层 logging 不生效
 
-xmpp:
-  host: localhost                 # XMPP 服务器地址
-  domain: iot.example.com         # XMPP 域名
-  user-prefix: cpe                # 用户名前缀
-  password: secret                # 密码
-  resource: sim                   # 资源名
-  tls-mode: NONE                  # TLS 模式：NONE、DIRECT 或 STARTTLS
-  sasl-mechanism: SCRAM-SHA-1     # SASL 认证机制：PLAIN、SCRAM-SHA-1 或 SCRAM-SHA-256
-  handshake-timeout: 60           # 每个握手阶段超时（秒），<=0 表示禁用
-  keepalive-interval: 60          # Ping 间隔（秒）
-  keepalive-timeout: 30           # Ping 超时（秒）
-
-logging:
-  level: INFO                     # 日志级别：DEBUG、INFO、WARN、ERROR
-  device-filter: ""               # 设备过滤（仅输出匹配设备的日志）
+xmpp:                             # NAT 模式必填
+  host: localhost
+  domain: iot.example.com
+  tls-mode: NONE                  # NONE | DIRECT（5223）| STARTTLS（5222）
+  sasl-mechanism: SCRAM-SHA-1
+  reconnect-initial-delay: 30     # 断线重连指数退避（秒）
+  reconnect-max-delay: 1800
 ```
 
 XMPP 端口未显式配置时，`DIRECT` TLS 默认使用 `5223`，`NONE` 和 `STARTTLS` 默认使用 `5222`。可通过 `--xmpp-port` 或 YAML 中的 `xmpp.port` 覆盖默认值。
@@ -239,6 +260,12 @@ java -jar target/cpe-simulator.jar start --conn-req-host 192.0.2.12 --socket-pat
 ```
 
 ### 自定义数据模型
+
+内置模型的文件组织：`models/tr181.yaml` / `models/tr098.yaml` 存放业务参数
+（ManagementServer/WAN/WiFi/VOIP/XMPP 等）及各模型独有的 DeviceInfo 参数；
+两个模型**公共的** DeviceInfo 参数统一定义在共享文件 `models/deviceinfo.yaml`
+（路径相对书写，ModelLoader 加载时按模型根对象 `Device.` / `InternetGatewayDevice.` 自动补前缀合并）。
+自定义模型（`--model` 指定文件路径）为单文件自包含，DeviceInfo 直接内联即可。
 
 创建 YAML 文件定义参数：
 
@@ -309,6 +336,21 @@ parameters:
 | CWMP | StringBuilder + Jackson XML | SOAP 消息构建/解析、会话管理、RPC 处理 |
 | XMPP | Netty + Aalto XML | 轻量 XMPP 客户端（直接 TLS/STARTTLS、SASL PLAIN/SCRAM-SHA-1/SCRAM-SHA-256、Bind、Presence、IQ、Ping、指数退避重连） |
 | HTTP | JDK HttpClient + Netty | 虚拟线程 HTTP 客户端、Netty HTTP 服务器 |
+
+### 桌面层（GUI 模式）
+
+| 组件 | 说明 |
+|------|------|
+| `desktop/DesktopLauncher` | GUI 入口（`CpeSimulatorApp` 无参数时分发到此） |
+| `desktop/DesktopApp` | JavaFX 应用：Cupertino 主题 + 深浅色切换 + 窗口图标 |
+| `desktop/ui/MainWindow` | 主窗口：品牌区 + 灵动岛状态胶囊（StatusIsland）+ 图标侧边导航 + 动画页面栈 |
+| `desktop/ui/*View` | 仪表盘/设备管理/设备详情/消息监视/日志/协议指南/配置编辑器 |
+| `desktop/ui/SequenceDiagram` | 自绘协议时序图组件（协议指南页数据源为 ProtocolFlows） |
+| `desktop/bridge/EngineController` | 引擎生命周期控制（虚拟线程执行 start/stop），配置校验与 CLI start 一致，启动失败给出可操作建议（如端口被系统保留） |
+| `desktop/bridge/UiEventBridge` | 引擎事件 → FX 线程节流管线（250ms 批量合并，防洪泛） |
+| `desktop/bridge/UiLogAppender` | logback 桥接（编程式注册，不改 logback.xml），驱动实时日志视图 |
+| `common/event/SimEventHub` | 引擎事件总线（可选监听，CLI 模式零开销）；`SimLogger` 结构化方法发布事件 |
+| `resources/desktop/app.css` | 自定义主题（毛玻璃侧边栏/卡片/灵动岛，`:dark` 伪类切换深浅色） |
 
 ## 测试
 

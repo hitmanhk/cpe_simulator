@@ -21,14 +21,15 @@ public class ConnReqAuthHandler {
     }
 
     public void handle(XmppStanza.IqStanza iq, Consumer<String> callback) {
+        String[] credentials = authConfig.credentialsFor(connection.getDeviceId());
         SimLogger.xmppEvent(connection.getDeviceId(), "CONNECTION_REQUEST_RECEIVED",
             "iqId=" + value(iq.id())
                 + " from=" + value(iq.from())
                 + " to=" + value(iq.to())
                 + " localJid=" + value(connection.getJid())
-                + " authEnabled=" + authConfig.enabled()
+                + " authEnabled=" + (credentials != null)
                 + " attempt=" + connection.getCurrentAttempt());
-        if (!authConfig.enabled()) {
+        if (credentials == null) {
             sendResult(iq);
             if (callback != null) {
                 callback.accept(connection.getDeviceId());
@@ -45,8 +46,8 @@ public class ConnReqAuthHandler {
         String username = childElements.get("username");
         String password = childElements.get("password");
 
-        if (username != null && username.equals(authConfig.username())
-            && password != null && password.equals(authConfig.password())) {
+        if (username != null && username.equals(credentials[0])
+            && password != null && password.equals(credentials[1])) {
             log.info("XMPP ConnectionRequest auth succeeded for device {}", connection.getDeviceId());
             sendResult(iq);
             if (callback != null) {

@@ -22,6 +22,8 @@
         <slf4j.version>2.0.16</slf4j.version>
         <logback.version>1.5.12</logback.version>
         <aalto.version>1.3.3</aalto.version>
+        <javafx.version>23.0.2</javafx.version>
+        <atlantafx.version>2.0.1</atlantafx.version>
         <junit.version>5.11.3</junit.version>
         <mockito.version>5.14.2</mockito.version>
         <main.class>com.cpe.simulator.CpeSimulatorApp</main.class>
@@ -71,6 +73,28 @@
             <groupId>com.fasterxml</groupId>
             <artifactId>aalto-xml</artifactId>
             <version>${aalto.version}</version>
+        </dependency>
+
+        <!-- Desktop UI (GUI mode only; JavaFX classes stay unloaded in CLI mode) -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mkpaz</groupId>
+            <artifactId>atlantafx-base</artifactId>
+            <version>${atlantafx.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>12.3.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-feather-pack</artifactId>
+            <version>12.3.1</version>
         </dependency>
 
         <dependency>
@@ -169,4 +193,93 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+          Windows 桌面安装包：mvn clean package -Pwindows-installer
+          默认产出免安装应用目录（app-image，无外部依赖）；
+          安装 WiX Toolset 3.11+ 后可 -Djpackage.type=exe（或 msi）生成安装向导。
+        -->
+        <profile>
+            <id>windows-installer</id>
+            <properties>
+                <jpackage.type>app-image</jpackage.type>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-jpackage-input</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/jpackage-input"/>
+                                        <mkdir dir="${project.build.directory}/jpackage-input"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="${project.build.directory}/jpackage-input"/>
+                                        <copy todir="${project.build.directory}/jpackage-input/models">
+                                            <fileset dir="models"/>
+                                        </copy>
+                                    </target>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>jpackage</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <delete dir="${project.build.directory}/installer"/>
+                                        <!-- 快捷方式选项仅对 exe/msi 安装包有效 -->
+                                        <condition property="jpackage.winopts"
+                                                   value="--win-shortcut --win-menu --win-menu-group &quot;ACS 设备模拟器&quot;"
+                                                   else="">
+                                            <not>
+                                                <equals arg1="${jpackage.type}" arg2="app-image"/>
+                                            </not>
+                                        </condition>
+                                        <exec executable="jpackage" failonerror="true">
+                                            <arg value="--type"/>
+                                            <arg value="${jpackage.type}"/>
+                                            <arg value="--name"/>
+                                            <arg value="CpeSimulator"/>
+                                            <arg value="--app-version"/>
+                                            <arg value="1.0.0"/>
+                                            <arg value="--description"/>
+                                            <arg value="ACS 设备模拟器 (TR-069 CWMP CPE Simulator)"/>
+                                            <arg value="--vendor"/>
+                                            <arg value="CPE Simulator"/>
+                                            <arg value="--icon"/>
+                                            <arg value="${project.basedir}/src/jpackage/app.ico"/>
+                                            <arg value="--input"/>
+                                            <arg value="${project.build.directory}/jpackage-input"/>
+                                            <arg value="--main-jar"/>
+                                            <arg value="${project.build.finalName}.jar"/>
+                                            <arg value="--main-class"/>
+                                            <arg value="com.cpe.simulator.CpeSimulatorApp"/>
+                                            <!-- class 文件带 preview 标志，运行时需开启 -->
+                                            <arg value="--java-options"/>
+                                            <arg value="--enable-preview"/>
+                                            <arg line="${jpackage.winopts}"/>
+                                            <arg value="--dest"/>
+                                            <arg value="${project.build.directory}/installer"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

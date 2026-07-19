@@ -16,10 +16,17 @@ public class CwmpServerHandler extends ChannelInboundHandlerAdapter {
 
     private final AppConfig config;
     private final CwmpServer.ConnectionRequestHandler requestHandler;
+    private final ConnReqCredentialProvider credentialProvider;
 
     public CwmpServerHandler(AppConfig config, CwmpServer.ConnectionRequestHandler handler) {
+        this(config, handler, null);
+    }
+
+    public CwmpServerHandler(AppConfig config, CwmpServer.ConnectionRequestHandler handler,
+                             ConnReqCredentialProvider credentialProvider) {
         this.config = config;
         this.requestHandler = handler;
+        this.credentialProvider = credentialProvider;
     }
 
     @Override
@@ -29,11 +36,6 @@ public class CwmpServerHandler extends ChannelInboundHandlerAdapter {
         }
 
         try {
-            if (config.isConnReqAuthEnabled() && !isAuthorized(request)) {
-                sendResponse(ctx, HttpResponseStatus.UNAUTHORIZED, "Unauthorized");
-                return;
-            }
-
             HttpMethod method = request.method();
             String uri = request.uri();
 
@@ -45,6 +47,18 @@ public class CwmpServerHandler extends ChannelInboundHandlerAdapter {
             String deviceId = uri.substring(CONN_REQ_PREFIX.length());
             if (deviceId.isEmpty()) {
                 sendResponse(ctx, HttpResponseStatus.NOT_FOUND, "Not Found");
+                return;
+            }
+
+            // 认证顺序：先解析设备，再按设备（厂商）凭据认证，回退全局凭据
+            String[] deviceCreds = credentialProvider != null
+                    ? credentialProvider.credentialsFor(deviceId) : null;
+            String expectedUser = deviceCreds != null ? deviceCreds[0] : config.getConnReqUser();
+            String expectedPassword = deviceCreds != null ? deviceCreds[1] : config.getConnReqPassword();
+            boolean authEnabled = expectedUser != null && !expectedUser.isEmpty()
+                    && expectedPassword != null && !expectedPassword.isEmpty();
+            if (authEnabled && !isAuthorized(request, expectedUser, expectedPassword)) {
+                sendResponse(ctx, HttpResponseStatus.UNAUTHORIZED, "Unauthorized");
                 return;
             }
 
@@ -68,7 +82,7 @@ public class CwmpServerHandler extends ChannelInboundHandlerAdapter {
         ctx.close();
     }
 
-    private boolean isAuthorized(FullHttpRequest request) {
+    private boolean isAuthorized(FullHttpRequest request, String expectedUser, String expectedPassword) {
         String authHeader = request.headers().get(HttpHeaderNames.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Basic ")) {
             return false;
@@ -81,7 +95,7 @@ public class CwmpServerHandler extends ChannelInboundHandlerAdapter {
 
             String user = decoded.substring(0, colonIdx);
             String pass = decoded.substring(colonIdx + 1);
-            return user.equals(config.getConnReqUser()) && pass.equals(config.getConnReqPassword());
+            return user.equals(expectedUser) && pass.equals(expectedPassword);
         } catch (Exception e) {
             return false;
         }
@@ -97,7 +111,8 @@ public class CwmpServerHandler extends ChannelInboundHandlerAdapter {
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=utf-8");
         response.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.length);
 
-        if (status == HttpResponseStatus.UNAUTHORIZED && config.isConnReqAuthEnabled()) {
+        if (status == HttpResponseStatus.UNAUTHORIZED) {
+            // 401 仅在启用了认证（全局或厂商凭据）时发出，需带认证挑战头
             response.headers().set(HttpHeaderNames.WWW_AUTHENTICATE, "Basic realm=\"CPE Connection Request\"");
         }
 

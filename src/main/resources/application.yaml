@@ -1,52 +1,234 @@
+# =============================================================================
+# ACS 设备模拟器（CPE Simulator）配置文件
+#
+# 本文件与 GUI「配置」页、CLI `start` 命令共用同一套配置项：
+#   - GUI「配置」页的"保存 YAML"即生成此格式，可直接互相加载
+#   - CLI 使用方式：java -jar cpe-simulator.jar start --config <本文件路径>
+#   - 不指定 --config 时，CLI 默认读取 JAR 内嵌的本文件
+#
+# 结构：simulator（模拟器主体配置，内嵌 logging）+ xmpp（NAT 模式 XMPP 通道）
+# 注意：logging 必须放在 simulator 内部，顶层 logging 块不会被读取。
+# =============================================================================
+
 simulator:
+  # ---------------------------------------------------------------------------
+  # 基本设置
+  # ---------------------------------------------------------------------------
+
+  # 运行模式：public | nat
+  #   public — 设备拥有公网可达地址，ACS 通过 HTTP 直接回连设备（使用下方"回连设置"）
+  #   nat    — 设备位于 NAT 之后，ACS 经 XMPP 服务器推送回连请求（需配置 xmpp 段）
+  # 默认：public
   mode: public
+
+  # 模拟的 CPE 实例数量
+  # 内存参考：TR-181 模型每设备约 12KB（5 万台约 600MB），大规模压测请加大 JVM 堆（-Xmx）
+  # 默认：100
   count: 100
+
+  # ACS 的 CWMP 端点 URL，设备所有 Inform 与 RPC 响应都通过 HTTP POST 发往该地址
+  # 默认：http://localhost:7547/
   acs-url: http://localhost:7547/
+
+  # 设备访问 ACS 时的 HTTP 认证凭据（自动协商 Digest MD5/SHA-256 或 Basic）
+  # 默认：admin / admin
   acs-user: admin
   acs-password: admin
 
+  # 数据模型：tr181 | tr098 | 自定义模型 YAML 文件路径
+  #   tr181 — Device. 根（TR-181，143 个参数）
+  #   tr098 — InternetGatewayDevice. 根（TR-098，94 个参数）
+  #   自定义路径 — 单文件自包含，格式见 models/tr181.yaml；
+  #                公共 DeviceInfo 参数共享于 models/deviceinfo.yaml（仅内置模型自动合并）
+  # 默认：tr181
   model: tr181
+
+  # 厂商 OUI（6 位十六进制），与 product-class、序列号共同构成 TR-069 DeviceId
+  # 默认："000000"
   oui: "000000"
+
+  # 产品类别字符串，DeviceId 的第二部分
+  # 默认：SimCPE
   product-class: SimCPE
-  serial-prefix: SIM
 
+  # 序列号前缀：第 N 台设备的序列号为「前缀 + (serial-start + N)」，如 SIM00001
+  # 默认：Sim
+  serial-prefix: Sim
+
+  # 序列号起始序号，多实例并行时用于错开编号段
+  # 默认：0
+  serial-start: 0
+
+  # ---------------------------------------------------------------------------
+  # Inform 调度（定时上报）
+  # 三个事件各自独立调度；interval=0 表示禁用该事件的周期上报；
+  # initial-jitter 为首次调度抖动比例（0.0~1.0），首次延迟 = interval × (1 ± 抖动×随机)，
+  # 用于打散大批量设备的首次上报时点，避免惊群。
+  # ---------------------------------------------------------------------------
   inform-schedules:
+    # 0 BOOTSTRAP（首次/恢复出厂入网）：通常只需一次，间隔给大值即可
+    # 默认：interval=0，initial-jitter=0.2
     bootstrap:
-      interval: 86400
+      interval: 0         # 秒
       initial-jitter: 0.2
+    # 1 BOOT（设备重启上线）
+    # 默认：interval=0，initial-jitter=0.2
     boot:
-      interval: 3600
+      interval: 0          # 秒
       initial-jitter: 0.2
+    # 2 PERIODIC（周期上报）：压测时的主要负载来源
+    # 默认：interval=180，initial-jitter=1
     periodic:
-      interval: 300
-      initial-jitter: 0.3
-  max-sessions: 1000
-  xmpp-only: false  # true 时在每台设备 XMPP ONLINE 后启动周期 Inform
+      interval: 180           # 秒
+      initial-jitter: 1
 
+  # 全局最大并发 CWMP 会话数（信号量限流）：同一时刻最多 N 台设备处于会话中，
+  # 超出的会话请求排队，30 秒等不到许可则放弃本次。调大增加 ACS 瞬时压力。
+  # 默认：1000
+  max-sessions: 1000
+
+  # CWMP 会话无消息活动的超时时间（秒），超时强制关闭会话
+  # 默认：30
+  session-timeout: 30
+
+  # 仅 XMPP 模式：true 时跳过 HTTP 回连监听与启动 BOOTSTRAP，
+  # 每台设备 XMPP 上线后才启动其周期 Inform。仅 NAT 模式可用，用于验证 XMPP 通道连通性。
+  # 默认：false
+  xmpp-only: false
+
+  # ---------------------------------------------------------------------------
+  # 批量连接限速（启动时的建连/首次上报节奏控制）
+  # ---------------------------------------------------------------------------
+
+  # 每批发起连接的设备数量，控制建连风暴
+  # 默认：1000
   connect-batch: 1000
+
+  # 相邻连接批次之间的等待毫秒数；有效建连速率 ≈ connect-batch ÷ connect-batch-delay
+  # 默认：200
   connect-batch-delay: 200
 
-  conn-req-host: 0.0.0.0         # 实例 IP：同时用于出站连接、回连监听和回连 URL
+  # 每批触发 0 BOOTSTRAP Inform 的设备数（阶梯式放量，保护 ACS）
+  # 默认：100
+  boot-batch-size: 100
+
+  # 相邻 BOOTSTRAP 批次之间的等待毫秒数（默认速率 ≈ 100 台/秒）
+  # 默认：1000
+  boot-batch-delay: 1000
+
+  # 批内每台设备叠加的随机延迟比例：0 ~（boot-batch-delay × boot-jitter）毫秒
+  # 范围 0.0~1.0。默认：0.5
+  boot-jitter: 0.5
+
+  # ---------------------------------------------------------------------------
+  # 回连设置（Connection Request，仅 public 模式使用）
+  # ---------------------------------------------------------------------------
+
+  # 本实例统一使用的网络地址，同时用于：
+  #   1. CWMP/XMPP 出站连接的源 IP
+  #   2. HTTP 回连服务的监听地址
+  #   3. 上报给 ACS 的 ManagementServer.ConnectionRequestURL 地址
+  # 多网卡跑多个模拟器实例时，为每个实例配置不同地址即可共用同一端口。
+  # 默认：0.0.0.0（全部网卡）
+  conn-req-host: 0.0.0.0
+
+  # HTTP 回连服务监听端口
+  # ⚠ Windows 注意：Hyper-V/WSL 会保留大段端口（用
+  #   netsh interface ipv4 show excludedportrange protocol=tcp 查看），
+  #   例如 7457-7556 段——7547 恰好落在其中，绑定会报 "Address already in use"。
+  #   遇到该错误请改用 17547 等空闲端口。
+  # 默认：7547
   conn-req-port: 7547
 
+  # HTTP 回连 Basic 认证凭据；两项都非空才启用认证（ACS 回连时需带凭据）
+  # 默认：空（不启用认证）
+  conn-req-user: ""
+  conn-req-password: ""
+
+  # ---------------------------------------------------------------------------
+  # 模拟行为（ACS 指令的响应模拟）
+  # ---------------------------------------------------------------------------
+
+  # 收到 Reboot 指令后，设备离线等待该秒数再恢复上线并上报 1 BOOT
+  # 默认：5
   reboot-delay: 5
+
+  # 收到固件下载（Download）指令后，模拟下载过程耗时（秒）
+  # 默认：10
   download-delay: 10
+
+  # 固件下载成功概率（0.0~1.0），用于验证 ACS 的失败处理与重试逻辑
+  # 默认：0.99
   download-success-rate: 0.99
 
-xmpp:
-  host: localhost
-  domain: iot.example.com
-  user-prefix: cpe
-  password: secret
-  resource: sim
-  tls-mode: NONE
-  sasl-mechanism: SCRAM-SHA-1
-  handshake-timeout: 60
-  keepalive-interval: 60
-  keepalive-timeout: 30
-  reconnect-initial-delay: 30  # seconds
-  reconnect-max-delay: 1800   # seconds
+  # ---------------------------------------------------------------------------
+  # 日志（必须嵌在 simulator 内；顶层 logging 块不会被读取）
+  # 日志写入 JAR 同级 logs/cpe-simulator.log；GUI 模式下同时显示在「日志」页。
+  # ---------------------------------------------------------------------------
+  logging:
+    # 日志级别：DEBUG（含设备级详细轨迹）| INFO | WARN | ERROR
+    # 默认：INFO
+    level: INFO
 
-logging:
-  level: INFO
-  device-filter: ""
+    # 只输出指定设备 ID（逗号分隔）的日志，留空记录全部设备
+    # 默认：""（全部）
+    device-filter: ""
+
+# =============================================================================
+# XMPP 通道（NAT 模式必填；public 模式可忽略本段）
+# =============================================================================
+xmpp:
+  # XMPP 服务器主机名或 IP
+  # 默认：localhost
+  host: localhost
+
+  # XMPP 端口；省略时自动选择：DIRECT TLS 用 5223，NONE/STARTTLS 用 5222
+  # 默认：自动（如需显式指定，取消下一行注释）
+  # port: 5222
+
+  # XMPP 服务域名，设备 JID 形如「用户名@域/资源」
+  # 默认：iot.example.com
+  domain: iot.example.com
+
+  # XMPP 用户名前缀（xmpp-only 模式使用）；普通 NAT 模式凭据由 ACS 通过
+  # SetParameterValues 下发到 Device.XMPP.Connection.1.*（TR-098 为 InternetGatewayDevice.XMPP.*）
+  # 默认：cpe
+  user-prefix: cpe
+
+  # XMPP 账号密码
+  # 默认：secret
+  password: secret
+
+  # XMPP 资源绑定名（JID 的资源部分）
+  # 默认：sim
+  resource: sim
+
+  # TLS 模式：NONE（明文）| DIRECT（连接即 TLS，默认端口 5223）| STARTTLS（协商升级，默认端口 5222）
+  # 模拟器信任所有服务器证书，便于对接自签名环境
+  # 默认：NONE
+  tls-mode: NONE
+
+  # SASL 认证机制：SCRAM-SHA-1 | SCRAM-SHA-256 | PLAIN
+  # 服务器不支持时按 PLAIN → SCRAM-SHA-256 → SCRAM-SHA-1 顺序回退选择双方都支持的机制
+  # 默认：SCRAM-SHA-1
+  sasl-mechanism: SCRAM-SHA-1
+
+  # XMPP 每个握手阶段（TCP/TLS/认证/绑定）的超时秒数，0 或负数表示禁用
+  # 默认：60
+  handshake-timeout: 60
+
+  # 上线后 XMPP Ping（urn:xmpp:ping）保活间隔秒数
+  # 默认：60
+  keepalive-interval: 60
+
+  # 发送 Ping 后等待 pong 的秒数，超时判定断线并触发重连
+  # 默认：30
+  keepalive-timeout: 30
+
+  # 断线重连指数退避：初始延迟（秒），每次失败翻倍并叠加 ±10% 抖动
+  # 默认：30
+  reconnect-initial-delay: 30
+
+  # 断线重连指数退避的封顶延迟（秒）
+  # 默认：1800
+  reconnect-max-delay: 1800

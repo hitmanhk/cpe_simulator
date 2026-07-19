@@ -100,4 +100,10 @@ class SimulationEngineTest {
         assertTrue(ResourceMonitor.getJvmMemoryMax() > 0);
         assertTrue(ResourceMonitor.getThreadCount() > 0);
     }
+
+    private static int freePort() throws Exception {
+        try (var socket = new java.net.ServerSocket(0)) {
+            return socket.getLocalPort();
+        }
+    }
 }
