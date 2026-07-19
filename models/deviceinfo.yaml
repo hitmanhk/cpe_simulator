@@ -1,0 +1,52 @@
+# =============================================================================
+# DeviceInfo 公共参数（TR-181 与 TR-098 共享的设备身份段）
+#
+# 本文件由 ModelLoader 在加载内置模型（tr181 / tr098）时自动合并。
+# 路径相对于模型根对象书写，加载时自动补根前缀：
+#   tr181 → Device.<path>
+#   tr098 → InternetGatewayDevice.<path>
+#
+# 各模型独有的 DeviceInfo 参数仍留在各自的主模型文件中。
+# =============================================================================
+parameters:
+  # ===================== DeviceInfo（公共部分） =====================
+  - path: DeviceInfo.Manufacturer
+    type: xsd:string
+    value: "SimVendor"
+    writable: false
+    notification: 0
+  - path: DeviceInfo.OUI
+    type: xsd:string
+    value: "${device.oui}"
+    writable: false
+    notification: 0
+  - path: DeviceInfo.ProductClass
+    type: xsd:string
+    value: "${device.productClass}"
+    writable: false
+    notification: 0
+  - path: DeviceInfo.SerialNumber
+    type: xsd:string
+    value: "${device.serial}"
+    writable: false
+    notification: 0
+  - path: DeviceInfo.HardwareVersion
+    type: xsd:string
+    value: "1.0"
+    writable: false
+    notification: 0
+  - path: DeviceInfo.SoftwareVersion
+    type: xsd:string
+    value: "1.0.0"
+    writable: false
+    notification: 0
+  - path: DeviceInfo.ProvisioningCode
+    type: xsd:string
+    value: ""
+    writable: true
+    notification: 0
+  - path: DeviceInfo.UpTime
+    type: xsd:unsignedInt
+    value: "0"
+    writable: false
+    notification: 0

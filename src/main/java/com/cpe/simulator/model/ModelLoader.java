@@ -18,12 +18,35 @@ public class ModelLoader {
 
     public static DataModel load(String modelSpec) {
         if ("tr181".equalsIgnoreCase(modelSpec)) {
-            return loadFromFile(resolveModelPath("tr181.yaml"));
+            return loadBuiltin("tr181.yaml", "Device");
         } else if ("tr098".equalsIgnoreCase(modelSpec)) {
-            return loadFromFile(resolveModelPath("tr098.yaml"));
+            return loadBuiltin("tr098.yaml", "InternetGatewayDevice");
         } else {
             return loadFromFile(modelSpec);
         }
+    }
+
+    /**
+     * Loads a built-in model. DeviceInfo parameters shared by all models live
+     * in {@code models/deviceinfo.yaml} with root-relative paths; they are
+     * merged in with the model's root prefix ({@code Device.} for TR-181,
+     * {@code InternetGatewayDevice.} for TR-098). Model-specific DeviceInfo
+     * parameters stay in the main model file. When the shared file is absent
+     * the main file is used as-is (backward compatible with single-file
+     * layouts and custom models that inline their DeviceInfo section).
+     */
+    private static DataModel loadBuiltin(String modelFileName, String rootPrefix) {
+        Path mainPath = Path.of(resolveModelPath(modelFileName));
+        List<ParameterDefinition> defs = new ArrayList<>(parseFile(mainPath));
+
+        Path sharedDeviceInfo = Path.of(resolveModelPath("deviceinfo.yaml"));
+        if (Files.exists(sharedDeviceInfo)) {
+            for (ParameterDefinition def : parseFile(sharedDeviceInfo)) {
+                def.path = rootPrefix + "." + def.path;
+                defs.add(def);
+            }
+        }
+        return buildDataModel(defs);
     }
 
     public static DataModel loadFromFile(String filePath) {
@@ -32,12 +55,39 @@ public class ModelLoader {
             throw new RuntimeException("Model file not found: " + path.toAbsolutePath()
                     + ". Expected models/tr181.yaml or models/tr098.yaml in the same directory as the JAR file.");
         }
+        return buildDataModel(parseFile(path));
+    }
+
+    private static List<ParameterDefinition> parseFile(Path path) {
+        if (!Files.exists(path)) {
+            throw new RuntimeException("Model file not found: " + path.toAbsolutePath()
+                    + ". Expected models/tr181.yaml or models/tr098.yaml in the same directory as the JAR file.");
+        }
         try (InputStream is = Files.newInputStream(path)) {
             JsonNode root = YAML_MAPPER.readTree(is);
-            return buildDataModel(root);
+            return parseParameterDefs(root);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load model from file: " + filePath, e);
+            throw new RuntimeException("Failed to load model from file: " + path, e);
         }
+    }
+
+    private static List<ParameterDefinition> parseParameterDefs(JsonNode root) {
+        List<ParameterDefinition> defs = new ArrayList<>();
+        JsonNode parameters = root.get("parameters");
+        if (parameters == null || !parameters.isArray()) {
+            return defs;
+        }
+        for (JsonNode param : parameters) {
+            ParameterDefinition def = new ParameterDefinition();
+            def.path = param.get("path").asText();
+            def.type = param.has("type") ? param.get("type").asText() : "xsd:string";
+            def.value = param.has("value") ? param.get("value").asText() : "";
+            def.writable = param.has("writable") && param.get("writable").asBoolean();
+            def.notification = param.has("notification") ? param.get("notification").asInt() : 0;
+            def.multiInstance = param.has("multiInstance") && param.get("multiInstance").asBoolean();
+            defs.add(def);
+        }
+        return defs;
     }
 
     private static String resolveModelPath(String modelName) {
@@ -59,26 +109,8 @@ public class ModelLoader {
         }
     }
 
-    private static DataModel buildDataModel(JsonNode root) {
+    private static DataModel buildDataModel(List<ParameterDefinition> defs) {
         DataModel dataModel = new DataModel();
-        JsonNode parameters = root.get("parameters");
-        if (parameters == null || !parameters.isArray()) {
-            dataModel.saveDefaults();
-            return dataModel;
-        }
-
-        List<ParameterDefinition> defs = new ArrayList<>();
-        for (JsonNode param : parameters) {
-            ParameterDefinition def = new ParameterDefinition();
-            def.path = param.get("path").asText();
-            def.type = param.has("type") ? param.get("type").asText() : "xsd:string";
-            def.value = param.has("value") ? param.get("value").asText() : "";
-            def.writable = param.has("writable") && param.get("writable").asBoolean();
-            def.notification = param.has("notification") ? param.get("notification").asInt() : 0;
-            def.multiInstance = param.has("multiInstance") && param.get("multiInstance").asBoolean();
-            defs.add(def);
-        }
-
         for (ParameterDefinition def : defs) {
             ensurePath(dataModel, def);
         }

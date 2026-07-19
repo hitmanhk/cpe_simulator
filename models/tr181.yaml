@@ -1,35 +1,8 @@
 parameters:
   # ===================== DeviceInfo =====================
-  - path: Device.DeviceInfo.Manufacturer
-    type: xsd:string
-    value: "SimVendor"
-    writable: false
-    notification: 0
-  - path: Device.DeviceInfo.OUI
-    type: xsd:string
-    value: "${device.oui}"
-    writable: false
-    notification: 0
-  - path: Device.DeviceInfo.ProductClass
-    type: xsd:string
-    value: "${device.productClass}"
-    writable: false
-    notification: 0
-  - path: Device.DeviceInfo.SerialNumber
-    type: xsd:string
-    value: "${device.serial}"
-    writable: false
-    notification: 0
-  - path: Device.DeviceInfo.HardwareVersion
-    type: xsd:string
-    value: "1.0"
-    writable: false
-    notification: 0
-  - path: Device.DeviceInfo.SoftwareVersion
-    type: xsd:string
-    value: "1.0.0"
-    writable: false
-    notification: 0
+  # 公共 DeviceInfo 参数（Manufacturer/OUI/ProductClass/SerialNumber/HardwareVersion/
+  # SoftwareVersion/ProvisioningCode/UpTime）位于共享文件 deviceinfo.yaml，加载时自动合并。
+  # 此处仅保留 TR-181 独有的 DeviceInfo 参数。
   - path: Device.DeviceInfo.AdditionalHardwareVersion
     type: xsd:string
     value: ""
@@ -38,16 +11,6 @@ parameters:
   - path: Device.DeviceInfo.AdditionalSoftwareVersion
     type: xsd:string
     value: ""
-    writable: false
-    notification: 0
-  - path: Device.DeviceInfo.ProvisioningCode
-    type: xsd:string
-    value: ""
-    writable: true
-    notification: 0
-  - path: Device.DeviceInfo.UpTime
-    type: xsd:unsignedInt
-    value: "0"
     writable: false
     notification: 0
   - path: Device.DeviceInfo.FirstUseDate
