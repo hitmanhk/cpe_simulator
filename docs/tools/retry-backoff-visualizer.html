@@ -10,7 +10,7 @@
 </head>
 <body>
 <iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="指数退避重试曲线对比工具" srcdoc="&lt;!doctype html&gt;
-&lt;html lang=&quot;en&quot;&gt;
+&lt;html lang=&quot;zh-CN&quot;&gt;
 &lt;head&gt;
 &lt;meta charset=&quot;utf-8&quot;&gt;
 &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
@@ -894,13 +894,17 @@ html&gt;body{padding:0}&lt;/style&gt;
   &lt;/style&gt;
 
   &lt;div class=&quot;rbl-meta text-small&quot; aria-label=&quot;固定模拟参数&quot;&gt;
-    &lt;span&gt;10,000 台设备&lt;/span&gt;
     &lt;span&gt;连续失败 7 轮&lt;/span&gt;
     &lt;span&gt;5 秒一个时间桶&lt;/span&gt;
+    &lt;span&gt;Full Jitter：[0, 每轮上限]&lt;/span&gt;
     &lt;span&gt;每个方案使用相同随机样本&lt;/span&gt;
   &lt;/div&gt;
 
   &lt;div class=&quot;viz-controls rbl-controls&quot;&gt;
+    &lt;label class=&quot;form-label&quot; for=&quot;rbl-device-count&quot;&gt;
+      设备总量
+      &lt;input id=&quot;rbl-device-count&quot; class=&quot;form-control&quot; type=&quot;number&quot; value=&quot;10000&quot; min=&quot;1&quot; max=&quot;1000000&quot; step=&quot;1000&quot; inputmode=&quot;numeric&quot;&gt;
+    &lt;/label&gt;
     &lt;label class=&quot;form-label&quot; for=&quot;rbl-horizon&quot;&gt;
       观察时长
       &lt;select id=&quot;rbl-horizon&quot; class=&quot;form-select&quot;&gt;
@@ -920,8 +924,6 @@ html&gt;body{padding:0}&lt;/style&gt;
           &lt;th scope=&quot;col&quot;&gt;方案名称&lt;/th&gt;
           &lt;th scope=&quot;col&quot; class=&quot;text-end&quot;&gt;初始时间（秒）&lt;/th&gt;
           &lt;th scope=&quot;col&quot; class=&quot;text-end&quot;&gt;最大时间（秒）&lt;/th&gt;
-          &lt;th scope=&quot;col&quot; class=&quot;text-end&quot;&gt;抖动下限&lt;/th&gt;
-          &lt;th scope=&quot;col&quot; class=&quot;text-end&quot;&gt;抖动上限&lt;/th&gt;
           &lt;th scope=&quot;col&quot;&gt;&lt;span class=&quot;sr-only&quot;&gt;操作&lt;/span&gt;&lt;/th&gt;
         &lt;/tr&gt;
       &lt;/thead&gt;
@@ -939,7 +941,6 @@ html&gt;body{padding:0}&lt;/style&gt;
       const root = document.getElementById(&#x27;retry-backoff-lab&#x27;);
       if (!root) return;
 
-      const DEVICE_COUNT = 10000;
       const RETRY_ROUNDS = 7;
       const BIN_SECONDS = 5;
       const MAX_SCENARIOS = 6;
@@ -956,12 +957,13 @@ html&gt;body{padding:0}&lt;/style&gt;
       let nextId = 3;
       let renderTimer;
       const scenarios = [
-        { id: 1, name: &#x27;方案 A&#x27;, initial: 30, max: 1800, lower: -0.5, upper: 1.0 },
-        { id: 2, name: &#x27;方案 B&#x27;, initial: 30, max: 1800, lower: -0.5, upper: 1.5 }
+        { id: 1, name: &#x27;方案 A&#x27;, initial: 60, max: 1200 },
+        { id: 2, name: &#x27;方案 B&#x27;, initial: 30, max: 1200 }
       ];
 
       const tbody = root.querySelector(&#x27;#rbl-scenarios&#x27;);
       const addButton = root.querySelector(&#x27;#rbl-add&#x27;);
+      const deviceCountInput = root.querySelector(&#x27;#rbl-device-count&#x27;);
       const horizonSelect = root.querySelector(&#x27;#rbl-horizon&#x27;);
       const warning = root.querySelector(&#x27;#rbl-warning&#x27;);
       const legend = root.querySelector(&#x27;#rbl-legend&#x27;);
@@ -991,20 +993,14 @@ html&gt;body{padding:0}&lt;/style&gt;
           const nameCell = document.createElement(&#x27;td&#x27;);
           const initialCell = document.createElement(&#x27;td&#x27;);
           const maxCell = document.createElement(&#x27;td&#x27;);
-          const lowerCell = document.createElement(&#x27;td&#x27;);
-          const upperCell = document.createElement(&#x27;td&#x27;);
           const actionCell = document.createElement(&#x27;td&#x27;);
 
           initialCell.className = &#x27;text-end&#x27;;
           maxCell.className = &#x27;text-end&#x27;;
-          lowerCell.className = &#x27;text-end&#x27;;
-          upperCell.className = &#x27;text-end&#x27;;
 
           nameCell.appendChild(createInput(scenario, &#x27;name&#x27;, { type: &#x27;text&#x27;, label: &#x27;名称&#x27; }));
           initialCell.appendChild(createInput(scenario, &#x27;initial&#x27;, { label: &#x27;初始时间&#x27;, min: 1, max: 86400, step: 1 }));
           maxCell.appendChild(createInput(scenario, &#x27;max&#x27;, { label: &#x27;最大时间&#x27;, min: 1, max: 86400, step: 1 }));
-          lowerCell.appendChild(createInput(scenario, &#x27;lower&#x27;, { label: &#x27;抖动下限&#x27;, min: -5, max: 10, step: 0.1 }));
-          upperCell.appendChild(createInput(scenario, &#x27;upper&#x27;, { label: &#x27;抖动上限&#x27;, min: -5, max: 10, step: 0.1 }));
 
           const removeButton = document.createElement(&#x27;button&#x27;);
           removeButton.type = &#x27;button&#x27;;
@@ -1021,7 +1017,7 @@ html&gt;body{padding:0}&lt;/style&gt;
             }
           });
           actionCell.appendChild(removeButton);
-          row.append(nameCell, initialCell, maxCell, lowerCell, upperCell, actionCell);
+          row.append(nameCell, initialCell, maxCell, actionCell);
           tbody.appendChild(row);
         });
         addButton.disabled = scenarios.length &gt;= MAX_SCENARIOS;
@@ -1031,12 +1027,17 @@ html&gt;body{padding:0}&lt;/style&gt;
         if (!scenario.name.trim()) return &#x27;方案名称不能为空&#x27;;
         if (!Number.isFinite(scenario.initial) || scenario.initial &lt;= 0) return &#x27;初始时间必须大于 0&#x27;;
         if (!Number.isFinite(scenario.max) || scenario.max &lt; scenario.initial) return &#x27;最大时间必须大于或等于初始时间&#x27;;
-        if (!Number.isFinite(scenario.lower) || !Number.isFinite(scenario.upper)) return &#x27;抖动范围必须是数字&#x27;;
-        if (scenario.lower &gt;= scenario.upper) return &#x27;抖动下限必须小于上限&#x27;;
         return &#x27;&#x27;;
       }
 
-      function simulate(scenario, horizonSeconds) {
+      function validateDeviceCount(deviceCount) {
+        if (!Number.isInteger(deviceCount) || deviceCount &lt; 1 || deviceCount &gt; 1000000) {
+          return &#x27;设备总量必须是 1 到 1,000,000 之间的整数&#x27;;
+        }
+        return &#x27;&#x27;;
+      }
+
+      function simulate(scenario, horizonSeconds, deviceCount) {
         const bins = new Array(Math.floor(horizonSeconds / BIN_SECONDS) + 1).fill(0);
         let seed = 20260720;
         const random = () =&gt; {
@@ -1044,12 +1045,11 @@ html&gt;body{padding:0}&lt;/style&gt;
           return seed / 4294967296;
         };
 
-        for (let device = 0; device &lt; DEVICE_COUNT; device += 1) {
+        for (let device = 0; device &lt; deviceCount; device += 1) {
           let elapsed = 0;
           for (let attempt = 0; attempt &lt; RETRY_ROUNDS; attempt += 1) {
             const base = Math.min(scenario.initial * (2 ** attempt), scenario.max);
-            const jitter = scenario.lower + random() * (scenario.upper - scenario.lower);
-            const delay = Math.max(base + jitter * base, scenario.initial / 2);
+            const delay = random() * base;
             elapsed += delay;
             if (elapsed &lt;= horizonSeconds) {
               bins[Math.floor(elapsed / BIN_SECONDS)] += 1;
@@ -1097,7 +1097,7 @@ html&gt;body{padding:0}&lt;/style&gt;
         });
       }
 
-      function renderChart(results, horizonSeconds) {
+      function renderChart(results, horizonSeconds, deviceCount) {
         chart.replaceChildren();
         const width = 900;
         const height = 430;
@@ -1117,7 +1117,7 @@ html&gt;body{padding:0}&lt;/style&gt;
         const title = createSvgElement(&#x27;title&#x27;);
         title.textContent = &#x27;指数退避方案实时对比曲线&#x27;;
         const desc = createSvgElement(&#x27;desc&#x27;);
-        desc.textContent = &#x27;曲线模拟一万台设备同时失败并连续重试七轮，每轮基础延迟翻倍并受最大时间限制，然后应用所配置的随机抖动。&#x27;;
+        desc.textContent = `曲线模拟 ${deviceCount.toLocaleString(&#x27;zh-CN&#x27;)} 台设备同时失败并连续重试七轮，每轮等待上限翻倍并受最大时间限制，实际等待在零到该轮上限之间均匀随机。`;
         svg.append(title, desc);
 
         const yTickCount = 4;
@@ -1304,22 +1304,21 @@ html&gt;body{padding:0}&lt;/style&gt;
       function render() {
         const errors = [];
         const validScenarios = [];
+        const deviceCount = deviceCountInput.valueAsNumber;
+        const deviceCountError = validateDeviceCount(deviceCount);
+        if (deviceCountError) errors.push(deviceCountError);
         scenarios.forEach(scenario =&gt; {
           const error = validateScenario(scenario);
           if (error) errors.push(`${scenario.name || &#x27;未命名方案&#x27;}：${error}`);
           else validScenarios.push(scenario);
         });
 
-        const clamped = validScenarios.filter(scenario =&gt; scenario.lower &lt; -0.5);
-        if (clamped.length) {
-          errors.push(`${clamped.map(scenario =&gt; scenario.name).join(&#x27;、&#x27;)} 的抖动下限低于 −0.5，部分结果会被初始时间一半的下限截断`);
-        }
         warning.className = errors.some(message =&gt; message.includes(&#x27;必须&#x27;) || message.includes(&#x27;不能为空&#x27;))
           ? &#x27;rbl-warning text-small text-destructive&#x27;
           : &#x27;rbl-warning text-small text-muted&#x27;;
         warning.textContent = errors.join(&#x27;；&#x27;);
 
-        if (!validScenarios.length) {
+        if (deviceCountError || !validScenarios.length) {
           legend.replaceChildren();
           chart.replaceChildren();
           detail.textContent = &#x27;&#x27;;
@@ -1327,9 +1326,9 @@ html&gt;body{padding:0}&lt;/style&gt;
         }
 
         const horizonSeconds = Number(horizonSelect.value) * 60;
-        const results = validScenarios.map(scenario =&gt; simulate(scenario, horizonSeconds));
+        const results = validScenarios.map(scenario =&gt; simulate(scenario, horizonSeconds, deviceCount));
         renderLegend(results);
-        renderChart(results, horizonSeconds);
+        renderChart(results, horizonSeconds, deviceCount);
         setPeakDetail(results);
       }
 
@@ -1339,15 +1338,14 @@ html&gt;body{padding:0}&lt;/style&gt;
         scenarios.push({
           id: scenarioId,
           name: scenarioId &lt;= 26 ? `方案 ${String.fromCharCode(64 + scenarioId)}` : `方案 ${scenarioId}`,
-          initial: 30,
-          max: 1800,
-          lower: -0.5,
-          upper: 0.5
+          initial: 60,
+          max: 1200
         });
         nextId += 1;
         renderScenarioRows();
         render();
       });
+      deviceCountInput.addEventListener(&#x27;input&#x27;, scheduleRender);
       horizonSelect.addEventListener(&#x27;change&#x27;, render);
 
       renderScenarioRows();

@@ -225,10 +225,10 @@ xmpp:
   # 默认：30
   keepalive-timeout: 30
 
-  # 断线重连指数退避：初始延迟（秒），每次失败翻倍并叠加 ±10% 抖动
-  # 默认：30
-  reconnect-initial-delay: 30
+  # 断线重连指数退避：首次随机等待上限（秒），后续上限每次翻倍
+  # 默认：60
+  reconnect-initial-delay: 60
 
-  # 断线重连指数退避的封顶延迟（秒）
-  # 默认：1800
-  reconnect-max-delay: 1800
+  # 断线重连指数退避的随机等待封顶上限（秒）
+  # 默认：1200
+  reconnect-max-delay: 1200

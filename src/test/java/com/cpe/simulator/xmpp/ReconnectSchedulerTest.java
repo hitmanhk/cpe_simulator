@@ -89,7 +89,14 @@ class ReconnectSchedulerTest {
 
     @Test
     void testOnSuccessResetsBackoff() {
-        ReconnectScheduler scheduler = createScheduler();
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+        ReconnectScheduler scheduler = new ReconnectScheduler(mockScheduler,
+            deviceId -> connections.stream()
+                .filter(c -> c.getDeviceId().equals(deviceId))
+                .findFirst().orElse(null),
+            mockEventLoopGroup,
+            config,
+            upperBound -> upperBound);
         scheduledDelays.clear();
 
         scheduler.onFailure("device001");
@@ -101,8 +108,8 @@ class ReconnectSchedulerTest {
         scheduler.onFailure("device001");
         long secondDelay = scheduledDelays.get(0);
 
-        assertTrue(secondDelay < 45_000,
-            "After reset, delay should be ~30s not escalated. Got: " + secondDelay + "ms");
+        assertEquals(60_000, firstDelay);
+        assertEquals(60_000, secondDelay);
     }
 
     @Test
@@ -192,13 +199,13 @@ class ReconnectSchedulerTest {
                 .filter(c -> c.getDeviceId().equals(deviceId))
                 .findFirst().orElse(null),
             mockEventLoopGroup,
-            config);
+            config,
+            upperBound -> upperBound);
         scheduledDelays.clear();
 
         scheduler.onFailure("device001");
 
         long delay = scheduledDelays.get(0);
-        assertTrue(delay >= 108_000 && delay <= 132_000,
-            "Configured initial delay should be ~120s, got: " + delay + "ms");
+        assertEquals(120_000, delay);
     }
 }

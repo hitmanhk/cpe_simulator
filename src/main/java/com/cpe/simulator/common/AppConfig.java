@@ -265,9 +265,9 @@ public class AppConfig {
         @JsonProperty("keepalive-timeout")
         private int keepaliveTimeout = 30;
         @JsonProperty("reconnect-initial-delay")
-        private int reconnectInitialDelay = 30;
+        private int reconnectInitialDelay = 60;
         @JsonProperty("reconnect-max-delay")
-        private int reconnectMaxDelay = 30 * 60;
+        private int reconnectMaxDelay = 20 * 60;
 
         public String getHost() { return host; }
         public void setHost(String host) { this.host = host; }

@@ -244,8 +244,8 @@ xmpp:                             # NAT 模式必填
   domain: iot.example.com
   tls-mode: NONE                  # NONE | DIRECT（5223）| STARTTLS（5222）
   sasl-mechanism: SCRAM-SHA-1
-  reconnect-initial-delay: 30     # 断线重连指数退避（秒）
-  reconnect-max-delay: 1800
+  reconnect-initial-delay: 60     # 首次重试随机上限（秒）
+  reconnect-max-delay: 1200       # 指数增长的封顶上限（秒）
 ```
 
 XMPP 端口未显式配置时，`DIRECT` TLS 默认使用 `5223`，`NONE` 和 `STARTTLS` 默认使用 `5222`。可通过 `--xmpp-port` 或 YAML 中的 `xmpp.port` 覆盖默认值。
@@ -315,7 +315,7 @@ parameters:
 | `CwmpClient` | CPE→ACS 的 HTTP 客户端，支持 Digest 认证 |
 | `CwmpServer` | ACS→CPE 反向回连的 Netty HTTP 服务器 |
 | `XmppEngine` | NAT 模式下的 XMPP 连接管理 |
-| `ReconnectPolicy` | XMPP 指数退避重连策略（初始 1s，最大 60s） |
+| `ReconnectScheduler` | XMPP Full Jitter 指数退避（上限从 60s 翻倍至 1200s，每轮在 0～上限间随机） |
 | `InformScheduler` | 定时 Inform 调度，支持随机抖动 |
 | `RpcRegistry` | 17 种 RPC 方法处理器注册表 |
 | `ResourceMonitor` | JVM 内存、线程、Socket 资源监控 |

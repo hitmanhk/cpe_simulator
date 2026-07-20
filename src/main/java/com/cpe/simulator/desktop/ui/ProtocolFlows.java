@@ -276,7 +276,7 @@ final class ProtocolFlows {
                                 SequenceDiagram.Kind.END),
                         msg(1, 0, "<failure/>（服务器 → CPE，异常路径）",
                                 "任一环节失败：状态 FAILED → 指数退避重连（初始 reconnect-initial-delay 秒，"
-                                        + "封顶 reconnect-max-delay 秒，±10% 抖动）",
+                                        + "上限每轮翻倍并封顶于 reconnect-max-delay 秒，每轮在 0～上限间随机）",
                                 SequenceDiagram.Kind.MESSAGE)));
     }
 

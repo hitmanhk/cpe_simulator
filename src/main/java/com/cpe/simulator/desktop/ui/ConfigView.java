@@ -368,9 +368,9 @@ public class ConfigView extends AbstractView implements ViewSearcher {
         row(g, 10, "保活超时（秒）", keepaliveTimeoutField, "等 pong 的超时",
                 "发送 Ping 后等待 pong 的秒数，超时判定断线并触发重连。默认：30");
         row(g, 11, "重连初始延迟（秒）", reconnectInitialDelayField, "指数退避起点",
-                "断线重连的指数退避初始延迟（秒），每次失败翻倍并叠加 ±10% 抖动。默认：30");
+                "首次重连的随机等待上限（秒），后续每次失败上限翻倍。默认：60");
         row(g, 12, "重连最大延迟（秒）", reconnectMaxDelayField, "退避封顶",
-                "指数退避的封顶延迟（秒）。默认：1800");
+                "Full Jitter 随机等待的封顶上限（秒）。默认：1200");
         return g;
     }
 

@@ -14,6 +14,14 @@ class ConfigLoaderXmppTest {
     Path tempDir;
 
     @Test
+    void usesFullJitterReconnectDefaults() {
+        AppConfig.XmppConfig config = new AppConfig.XmppConfig();
+
+        assertEquals(60, config.getReconnectInitialDelay());
+        assertEquals(1200, config.getReconnectMaxDelay());
+    }
+
+    @Test
     void loadsTopLevelXmppTlsAndSaslConfiguration() throws Exception {
         Path configFile = tempDir.resolve("simulator.yaml");
         Files.writeString(configFile, """
